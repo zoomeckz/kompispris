@@ -82,7 +82,7 @@ export function AdminSidebar() {
           <ChevronLeft className={cn("h-5 w-5 transition-transform", collapsed && "rotate-180")} />
           {!collapsed && <span>Collapse</span>}
         </button>
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full">
+        <button onClick={signOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full">
           <LogOut className="h-5 w-5" />
           {!collapsed && <span>Logout</span>}
         </button>
