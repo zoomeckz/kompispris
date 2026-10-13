@@ -1,46 +1,36 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/useAuth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Dashboard from "./pages/Dashboard";
-import UsersPage from "./pages/UsersPage";
-import WorksPage from "./pages/WorksPage";
-import TransfersPage from "./pages/TransfersPage";
-import RevenuePage from "./pages/RevenuePage";
-import PayoutsPage from "./pages/PayoutsPage";
-import SupportPage from "./pages/SupportPage";
-import SettingsPage from "./pages/SettingsPage";
-import AuthPage from "./pages/AuthPage";
-import NotFound from "./pages/NotFound";
+import { AppProvider } from "@/hooks/useApp";
+import Layout from "@/components/Layout";
+import Recipes from "@/pages/Recipes";
+import RecipeEditor from "@/pages/RecipeEditor";
+import Lists from "@/pages/Lists";
+import ListView from "@/pages/ListView";
+import Offers from "@/pages/Offers";
+import Products from "@/pages/Products";
+import SettingsPage from "@/pages/Settings";
+import Admin from "@/pages/Admin";
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-            <Route path="/works" element={<ProtectedRoute><WorksPage /></ProtectedRoute>} />
-            <Route path="/transfers" element={<ProtectedRoute><TransfersPage /></ProtectedRoute>} />
-            <Route path="/revenue" element={<ProtectedRoute><RevenuePage /></ProtectedRoute>} />
-            <Route path="/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
-            <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+export default function App() {
+  return (
+    <AppProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Recipes />} />
+            <Route path="/recept/:id" element={<RecipeEditor />} />
+            <Route path="/listor" element={<Lists />} />
+            <Route path="/listor/:id" element={<ListView />} />
+            <Route path="/erbjudanden" element={<Offers />} />
+            <Route path="/varor" element={<Products />} />
+            <Route path="/installningar" element={<SettingsPage />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/logga-in" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AppProvider>
+  );
+}

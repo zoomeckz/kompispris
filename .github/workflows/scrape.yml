@@ -1,0 +1,45 @@
+name: Scrape prices
+
+# Runs on a schedule and when an admin presses "Scrape" in the app (via the trigger-scrape edge function).
+# Repository secrets needed: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "scrape_runs id created by the app (optional)"
+        required: false
+        default: ""
+  schedule:
+    - cron: "0 4 * * 1,4"   # Monday and Thursday 04:00 UTC
+
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: scraper
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RUN_ID: ${{ github.event.inputs.run_id }}
+      RUN_SOURCE: ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
+      KP_OUT: products.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Mark run as started
+        run: python3 upload.py start
+      - name: Scrape all stores
+        run: python3 run_all.py
+      - name: Publish library
+        run: python3 upload.py publish products.json
+      - name: Mark run as failed
+        if: failure()
+        run: python3 upload.py fail "$(tail -n 1 run_all.log 2>/dev/null || echo 'Körningen avbröts')"

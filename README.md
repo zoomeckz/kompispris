@@ -1,30 +1,30 @@
-# Melody Maestro
+# KompisPris
 
-I want you to create a music platform for me. I run a company. I want to add songs, with covers, be able to search for ISRC from spotify as well when I search for an artist.
+Recept och matlistor som räknar ut vad det kostar att handla, med det billigaste från Willys, Hemköp, Coop, ICA (veckans erbjudanden) och Lidl (veckans erbjudanden), plus makron per portion.
 
-Give me a suiperAdmin panel.
+## Hur det hänger ihop
 
-Panels: Dashboard, Users, Works, Transfer requests, Revenue, payouts, support and so forth.
+- **Prisbiblioteket** (`products.json`) är den enda källan till priser. Appen läser det, den hämtar aldrig något från butikerna.
+- **Scrapern** (`scraper/`) bygger ett nytt bibliotek från grunden och laddar upp det till Supabase Storage (`library/products.json`). Den körs i GitHub Actions (`.github/workflows/scrape.yml`) måndag och torsdag 04:00 UTC, och när en admin trycker på **Scrape** i appen. Det kostar inga Claude-tokens.
+- **Supabase** sköter konton (e-post, Google, Facebook), recept, matlistor, inställningar, sökstatistik och admin-rollen.
+- Om Storage ännu är tomt används kopian i `public/library/products.json`.
 
-This project was built with [Lovable](https://lovable.dev).
+## Teknik
 
-**Live app**: https://kompispris.lovable.app
+Vite, React, TypeScript, Tailwind, Supabase. Samma upplägg som Lovable använder.
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/b9cf8b15-95fb-4e3b-890c-86f9fb36686b).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
 ```
+src/lib/engine.ts        prismotorn: matchning, billigaste förpackning, erbjudanden, totaler
+src/lib/format.ts        formatering, textexport, sammanslagning av recept i listor
+src/hooks/useApp.tsx     bibliotek, konto, recept, listor, inställningar, statistik
+src/pages/               Recept, Matlistor, Erbjudanden, Varor, Inställningar, Admin, Logga in
+supabase/migrations/     databas, roller, regler, admin-statistik, lagring
+supabase/functions/      trigger-scrape (startar GitHub-jobbet), delete-account
+scraper/                 Python-skript för alla butiker + uppladdning
+```
+
+Kom igång lokalt: `npm install`, kopiera `.env.example` till `.env` och fyll i Supabase-uppgifterna, sedan `npm run dev`.
+
+Inställningar som måste göras en gång finns i [SETUP.md](SETUP.md).
+
+Lovable-projekt: https://lovable.dev/projects/b9cf8b15-95fb-4e3b-890c-86f9fb36686b · Live: https://kompispris.lovable.app
