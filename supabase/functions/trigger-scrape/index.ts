@@ -1,6 +1,6 @@
 // Starts the price scrape (GitHub Actions workflow "scrape.yml"). Admins only.
-// Secrets (Supabase > Edge Functions > Secrets): GITHUB_PAT (fine-grained token with Actions: read and write
-// on the repo), GITHUB_REPO (e.g. "zoomeckz/kompispris"), optional GITHUB_REF (default "main").
+// Secrets (Lovable Cloud > Secrets): GITHUB_PAT (fine-grained token with Actions: read and write on the repo),
+// optional GITHUB_REPO (default "zoomeckz/kompispris") and GITHUB_REF (default "main").
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const cors = {
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL")!;
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const pat = Deno.env.get("GITHUB_PAT");
-  const repo = Deno.env.get("GITHUB_REPO");
+  const repo = Deno.env.get("GITHUB_REPO") ?? "zoomeckz/kompispris";
   const ref = Deno.env.get("GITHUB_REF") ?? "main";
 
   const auth = req.headers.get("Authorization") ?? "";
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   const admin = createClient(url, service);
   const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
   if (!isAdmin) return json({ error: "Bara admin kan starta en scrape." }, 403);
-  if (!pat || !repo) return json({ error: "GITHUB_PAT och GITHUB_REPO saknas i Supabase-hemligheterna." }, 500);
+  if (!pat) return json({ error: "GITHUB_PAT saknas i Lovable Cloud-hemligheterna." }, 500);
 
   // one run at a time
   const { data: busy } = await admin.from("scrape_runs").select("id,created_at").in("status", ["queued", "running"])

@@ -1,7 +1,8 @@
 name: Scrape prices
 
 # Runs on a schedule and when an admin presses "Scrape" in the app (via the trigger-scrape edge function).
-# Repository secrets needed: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+# No secrets needed: upload.py proves it is this workflow with a GitHub OIDC token and the
+# publish-library edge function does the writing.
 on:
   workflow_dispatch:
     inputs:
@@ -16,6 +17,10 @@ concurrency:
   group: scrape
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
@@ -24,8 +29,7 @@ jobs:
       run:
         working-directory: scraper
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: https://mcwnxlnvoochuqldoksu.supabase.co
       RUN_ID: ${{ github.event.inputs.run_id }}
       RUN_SOURCE: ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
       KP_OUT: products.json

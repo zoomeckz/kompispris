@@ -1,1 +1,5 @@
 project_id = "mcwnxlnvoochuqldoksu"
+
+# called by GitHub Actions with a GitHub OIDC token (checked inside the function), not a Supabase login
+[functions.publish-library]
+verify_jwt = false
