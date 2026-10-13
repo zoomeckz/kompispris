@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useApp } from "@/hooks/useApp";
 import { STORE_CODES, StoreCode, lib } from "@/lib/engine";
 import { StoreChip } from "@/components/ui";

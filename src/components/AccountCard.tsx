@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useApp } from "@/hooks/useApp";
 
 /** shown where saving needs an account */

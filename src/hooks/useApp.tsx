@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase, SUPABASE_URL_PUBLIC } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL_PUBLIC } from "@/lib/supabase";
 import { DEFAULT_SETTINGS, Recipe, Settings, ShoppingList, parseLibrary, setLibrary, setSettings as engineSetSettings, Library } from "@/lib/engine";
 
 const LS_SETTINGS = "kompispris.settings";
