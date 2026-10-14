@@ -1,17 +1,20 @@
+import { lazyPage } from "@/lib/lazyPage";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppProvider } from "@/hooks/useApp";
 import { LangProvider } from "@/i18n";
 import Layout from "@/components/Layout";
 import Recipes from "@/pages/Recipes";
-import RecipeEditor from "@/pages/RecipeEditor";
-import Lists from "@/pages/Lists";
-import ListView from "@/pages/ListView";
-import Offers from "@/pages/Offers";
-import Products from "@/pages/Products";
-import SettingsPage from "@/pages/Settings";
-import Admin from "@/pages/Admin";
-import Auth from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
+
+// the start page comes with the app; every other page is downloaded the first time it is opened
+const RecipeEditor = lazyPage(() => import("@/pages/RecipeEditor"));
+const Lists = lazyPage(() => import("@/pages/Lists"));
+const ListView = lazyPage(() => import("@/pages/ListView"));
+const Offers = lazyPage(() => import("@/pages/Offers"));
+const Products = lazyPage(() => import("@/pages/Products"));
+const SettingsPage = lazyPage(() => import("@/pages/Settings"));
+const Admin = lazyPage(() => import("@/pages/Admin"));
+const Auth = lazyPage(() => import("@/pages/Auth"));
 
 export default function App() {
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import { Sheet } from "./ui";
@@ -36,7 +36,7 @@ export default function Layout() {
         <main>
           {libError ? <div className="card empty-state">{t("lib_error")}</div>
             : !lib && loc.pathname !== "/logga-in" ? <div className="loading">{t("lib_loading")}<div className="bar"><i /></div></div>
-            : <div className="page" key={loc.pathname}><Outlet /></div>}
+            : <div className="page" key={loc.pathname}><Suspense fallback={<div className="loading"><div className="bar"><i /></div></div>}><Outlet /></Suspense></div>}
         </main>
       </div>
       <nav className="tabs" aria-label={t("nav_aria")}>

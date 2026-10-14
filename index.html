@@ -6,12 +6,21 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0f1714" />
     <title>KompisPris</title>
-    <meta name="description" content="Recept och matlistor med billigaste priset från Willys, Hemköp, Coop, ICA och Lidl, med makron." />
+    <meta name="description" content="Recept och matlistor med billigaste priset från Willys, Hemköp, Coop, ICA, Lidl och ÖoB, med makron." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="KompisPris" />
+    <meta property="og:title" content="KompisPris" />
+    <meta property="og:description" content="Recept och matlistor med billigaste priset från Willys, Hemköp, Coop, ICA, Lidl och ÖoB, med makron." />
+    <meta property="og:locale" content="sv_SE" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- connect early to the font files and the database, which the first screen needs -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://mcwnxlnvoochuqldoksu.supabase.co" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" />
-    <!-- only the nine language flags, so they show on Windows too (it has no flag emojis) -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&text=%F0%9F%87%B8%F0%9F%87%AA%F0%9F%87%AC%F0%9F%87%A7%F0%9F%87%A9%F0%9F%87%AA%F0%9F%87%AB%F0%9F%87%B7%F0%9F%87%AA%F0%9F%87%B8%F0%9F%87%A7%F0%9F%87%AC%F0%9F%87%BA%F0%9F%87%A6%F0%9F%87%B7%F0%9F%87%BA%F0%9F%87%AE%F0%9F%87%B7&display=swap" />
+    <!-- only the nine language flags, so they show on Windows too (it has no flag emojis); loaded without holding up the page -->
+    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&text=%F0%9F%87%B8%F0%9F%87%AA%F0%9F%87%AC%F0%9F%87%A7%F0%9F%87%A9%F0%9F%87%AA%F0%9F%87%AB%F0%9F%87%B7%F0%9F%87%AA%F0%9F%87%B8%F0%9F%87%A7%F0%9F%87%AC%F0%9F%87%BA%F0%9F%87%A6%F0%9F%87%B7%F0%9F%87%BA%F0%9F%87%AE%F0%9F%87%B7&display=swap" />
   </head>
   <body>
     <div id="root"></div>

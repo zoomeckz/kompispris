@@ -72,17 +72,23 @@ let cfg: Settings = DEFAULT_SETTINGS;
 const gcache = new Map<string, any>();
 const gexact = new Map<string, boolean>();
 let rcache = new WeakMap<Ingredient, Partial<Record<StoreCode, Cost | null>>>();
+// whole-recipe/list results, keyed by the ingredient array (a new array is made whenever a recipe or list changes)
+let tcache = new WeakMap<Ingredient[], Totals>();
+const priceKey = (s: Settings) => JSON.stringify([s.offers, s.member, s.stores]);
 
 export const lib = () => L as Library;
-export function setSettings(s: Settings) { cfg = s; rcache = new WeakMap(); }
+/** only settings that change prices throw the computed prices away; folding a category or dragging a recipe does not */
+export function setSettings(s: Settings) { const changed = priceKey(s) !== priceKey(cfg); cfg = s; if (changed) resetCostCache(); }
 export function settings() { return cfg; }
-export function resetCostCache() { rcache = new WeakMap(); }
+export function resetCostCache() { rcache = new WeakMap(); tcache = new WeakMap(); }
 
 export function parseLibrary(d: any): Library {
-  const C: string[] = d.cols;
+  const C: string[] = d.cols; const nc = C.length;
+  // runs for every product on every visit: the name is normalized once and reused (twice as fast, same result)
   const P: Product[] = d.rows.map((r: any[]) => {
-    const o: any = {}; C.forEach((c, i) => (o[c] = r[i]));
-    o.key = o.s + ":" + o.id; o.nn = norm(o.n + " " + o.b); o.tk = toks(o.n); o.h3 = norm(o.n).split(" ").slice(0, 3);
+    const o: any = {}; for (let i = 0; i < nc; i++) o[C[i]] = r[i];
+    const nN = norm(o.n), w = nN.split(" "), nb = o.b ? norm(o.b) : "";
+    o.key = o.s + ":" + o.id; o.nn = nb ? nN + " " + nb : nN; o.tk = w.filter((t) => t.length > 1 && !STOP.has(t)); o.h3 = w.slice(0, 3);
     return o as Product;
   });
   const byKey = new Map<string, Product>(); const byEan = new Map<string, Product[]>();
@@ -93,7 +99,7 @@ export function parseLibrary(d: any): Library {
   const slv: SlvFood[] = (d.slv || []).map((x: any[], i: number) => ({ i, n: x[0], m: [x[1], x[2], x[3], x[4]], nn: norm(x[0]) }));
   return { updated: d.updated, cats: d.cats, P, byKey, byEan, lidl, ica, slv };
 }
-export function setLibrary(l: Library) { L = l; gcache.clear(); gexact.clear(); rcache = new WeakMap(); }
+export function setLibrary(l: Library) { L = l; gcache.clear(); gexact.clear(); resetCostCache(); }
 
 /* ---------- product helpers ---------- */
 export function prodMacros(p?: Product | null): number[] | null {
@@ -311,6 +317,11 @@ export const activeStores = () => STORE_CODES.filter((s) => cfg.stores[s] !== fa
 export interface Line { ing: Ingredient; s: StoreCode | null; c: Cost | null; v?: number; }
 export interface Totals { per: Record<string, { sum: number; used: number; missing: number; lines: Line[] }>; mac: number[]; macMissing: number; cheapest: { sum: number; used: number; missing: number; lines: Line[] }; combos: { set: StoreCode[]; sum: number; used: number; miss: number; lines: Line[] }[]; }
 export function totals(ings: Ingredient[]): Totals {
+  let t = tcache.get(ings);
+  if (!t) { t = computeTotals(ings); tcache.set(ings, t); }
+  return t;
+}
+function computeTotals(ings: Ingredient[]): Totals {
   const stores = activeStores();
   const per: Totals["per"] = {}; stores.forEach((s) => (per[s] = { sum: 0, used: 0, missing: 0, lines: [] }));
   const mac = [0, 0, 0, 0]; let macMissing = 0;
