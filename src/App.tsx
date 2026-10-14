@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppProvider } from "@/hooks/useApp";
+import { LangProvider } from "@/i18n";
 import Layout from "@/components/Layout";
 import Recipes from "@/pages/Recipes";
 import RecipeEditor from "@/pages/RecipeEditor";
@@ -15,22 +16,24 @@ import NotFound from "@/pages/NotFound";
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Recipes />} />
-            <Route path="/recept/:id" element={<RecipeEditor />} />
-            <Route path="/listor" element={<Lists />} />
-            <Route path="/listor/:id" element={<ListView />} />
-            <Route path="/erbjudanden" element={<Offers />} />
-            <Route path="/varor" element={<Products />} />
-            <Route path="/installningar" element={<SettingsPage />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/logga-in" element={<Auth />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <LangProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Recipes />} />
+              <Route path="/recept/:id" element={<RecipeEditor />} />
+              <Route path="/listor" element={<Lists />} />
+              <Route path="/listor/:id" element={<ListView />} />
+              <Route path="/erbjudanden" element={<Offers />} />
+              <Route path="/varor" element={<Products />} />
+              <Route path="/installningar" element={<SettingsPage />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/logga-in" element={<Auth />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </LangProvider>
     </AppProvider>
   );
 }

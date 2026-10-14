@@ -1,10 +1,12 @@
 /* KompisPris price engine.
  * Everything here works on the price library (products.json) that the scraper publishes.
- * Nothing in the app ever fetches from the stores directly. */
+ * Nothing in the app ever fetches from the stores directly.
+ * ÖoB has no price data at all: it only uses prices people type in themselves (like ICA's own prices). */
+import { t } from "@/i18n";
 
-export type StoreCode = "w" | "h" | "c" | "i" | "l";
-export const STORES: Record<StoreCode, string> = { w: "Willys", h: "Hemköp", c: "Coop", i: "ICA", l: "Lidl" };
-export const STORE_CODES: StoreCode[] = ["w", "h", "c", "i", "l"];
+export type StoreCode = "w" | "h" | "c" | "i" | "l" | "o";
+export const STORES: Record<StoreCode, string> = { w: "Willys", h: "Hemköp", c: "Coop", i: "ICA", l: "Lidl", o: "ÖoB" };
+export const STORE_CODES: StoreCode[] = ["w", "h", "c", "i", "l", "o"];
 export const CHAIN_CODES: StoreCode[] = ["w", "h", "c"];
 export const UNITS: Record<string, number | null> = { g: 1, kg: 1000, ml: 1, dl: 100, l: 1000, msk: 15, tsk: 5, krm: 1, st: null };
 export type Unit = keyof typeof UNITS;
@@ -22,16 +24,18 @@ export interface SlvFood { i: number; n: string; m: number[]; nn: string; }
 export interface Ingredient {
   id: string; label: string; q: string | null; qty: number; unit: Unit;
   picks: Partial<Record<StoreCode, string>>; icaOffer?: string | null; lidl?: string | null;
-  ica?: { price: number; grams?: number | null; pcs?: number | null; perKg?: boolean } | null;
+  ica?: OwnPrice | null; oob?: OwnPrice | null;
   gPerSt?: number | null; pantry?: boolean; done?: boolean; from?: string[];
   macro?: { slv?: number; custom?: number[] } | null;
 }
+/** a shelf price someone typed in: per pack (with the pack's weight or piece count), or per kg */
+export interface OwnPrice { price: number; grams?: number | null; pcs?: number | null; perKg?: boolean }
 export interface Recipe { id: string; name: string; portions: number; notes: string; ings: Ingredient[]; updated_at?: string; }
 export interface ShoppingList { id: string; name: string; mode: Mode; items: Ingredient[]; updated_at?: string; }
 export type Mode = "cheap" | "k" | StoreCode;
 
 export interface Settings { offers: boolean; member: boolean; stores: Record<StoreCode, boolean>; }
-export const DEFAULT_SETTINGS: Settings = { offers: true, member: false, stores: { w: true, h: true, c: true, i: true, l: true } };
+export const DEFAULT_SETTINGS: Settings = { offers: true, member: false, stores: { w: true, h: true, c: true, i: true, l: true, o: true } };
 
 export interface Cost {
   buy: number; used: number; packs: number; grams?: number; label?: string; offer?: boolean; member?: boolean;
@@ -276,21 +280,21 @@ function cheapestOffer(ing: Ingredient, pool: any[], fn: (i: Ingredient, x: any)
   for (const x of pool) { const b = fn(ing, x); if (b && (!best || b.buy < best.buy)) best = b; }
   if (best) best.locked = locked; return best;
 }
+function ownCost(ing: Ingredient, x: OwnPrice, s: StoreCode): Cost | null {
+  const q = +ing.qty || 0; const lbl = t("own_price_label", { store: STORES[s] });
+  if (x.perKg) { const g = ingGrams(ing); if (g == null) return null; const c = (x.price * g) / 1000; return { used: c, buy: c, packs: 0, label: lbl }; }
+  let frac: number;
+  if (ing.unit === "st") { const w = pieceGrams(ing); frac = +(x.pcs || 0) ? q / +(x.pcs as number) : +(x.grams || 0) && w ? (q * w) / +(x.grams as number) : q; }
+  else { const g = q * unitG(ing.unit); frac = +(x.grams || 0) ? g / +(x.grams as number) : 1; }
+  const packs = Math.max(1, Math.ceil(frac - 1e-9));
+  return { buy: packs * x.price, used: Math.min(frac, packs) * x.price, packs, label: lbl };
+}
 export function ingCost(ing: Ingredient, s: StoreCode): Cost | null {
   if (ing.pantry) return { used: 0, buy: 0, packs: 0, pantry: true };
   if (s === "w" || s === "h" || s === "c") return resolve(ing)[s] || null;
-  const q = +ing.qty || 0;
+  if (s === "o") return ing.oob?.price ? ownCost(ing, ing.oob, "o") : null;
   if (s === "i") {
-    const x = ing.ica;
-    if (x && x.price) {
-      const lbl = "ICA (ditt pris)";
-      if (x.perKg) { const g = ingGrams(ing); if (g == null) return null; const c = (x.price * g) / 1000; return { used: c, buy: c, packs: 0, label: lbl }; }
-      let frac: number;
-      if (ing.unit === "st") { const w = pieceGrams(ing); frac = +(x.pcs || 0) ? q / +(x.pcs as number) : +(x.grams || 0) && w ? (q * w) / +(x.grams as number) : q; }
-      else { const g = q * unitG(ing.unit); frac = +(x.grams || 0) ? g / +(x.grams as number) : 1; }
-      const packs = Math.max(1, Math.ceil(frac - 1e-9));
-      return { buy: packs * x.price, used: Math.min(frac, packs) * x.price, packs, label: lbl };
-    }
+    if (ing.ica?.price) return ownCost(ing, ing.ica, "i");
     const pool = ing.icaOffer ? L!.ica.filter((y) => y.key === ing.icaOffer) : offerGroup(ing, "ica");
     return cheapestOffer(ing, pool, icaBuy, !!ing.icaOffer);
   }
@@ -333,37 +337,39 @@ export function totals(ings: Ingredient[]): Totals {
   return { per, mac, macMissing, cheapest, combos };
 }
 export interface ModeResult { title: string; sum: number; used: number; miss: number; lines: Line[]; }
-export function modeResult(t: Totals, mode: Mode): ModeResult {
-  if (mode === "cheap") return { title: "Billigaste mix", sum: t.cheapest.sum, used: t.cheapest.used, miss: t.cheapest.missing, lines: t.cheapest.lines };
+export function modeResult(tot: Totals, mode: Mode): ModeResult {
+  if (mode === "cheap") return { title: t("title_cheap"), sum: tot.cheapest.sum, used: tot.cheapest.used, miss: tot.cheapest.missing, lines: tot.cheapest.lines };
   if (mode === "k") {
-    const ok = t.combos.filter((c) => c.set.length <= 2).sort((a, b) => a.miss - b.miss || a.sum - b.sum || a.set.length - b.set.length);
-    const c = ok[0]; if (!c) return { title: "Max 2 butiker", sum: 0, used: 0, miss: 0, lines: [] };
-    return { title: `Max 2 butiker: ${c.set.map((s) => STORES[s]).join(" + ")}`, sum: c.sum, used: c.used, miss: c.miss, lines: c.lines };
+    const ok = tot.combos.filter((c) => c.set.length <= 2).sort((a, b) => a.miss - b.miss || a.sum - b.sum || a.set.length - b.set.length);
+    const c = ok[0]; if (!c) return { title: t("title_k"), sum: 0, used: 0, miss: 0, lines: [] };
+    return { title: t("title_k_set", { stores: c.set.map((s) => STORES[s]).join(" + ") }), sum: c.sum, used: c.used, miss: c.miss, lines: c.lines };
   }
-  const s = cfg.stores[mode] === false ? activeStores()[0] : mode; const p = t.per[s];
+  const s = cfg.stores[mode] === false ? activeStores()[0] : mode; const p = tot.per[s];
   if (!p) return { title: STORES[s], sum: 0, used: 0, miss: 0, lines: [] };
-  return { title: "Allt från " + STORES[s], sum: p.sum, used: p.used, miss: p.missing, lines: p.lines };
+  return { title: t("title_all_from", { store: STORES[s] }), sum: p.sum, used: p.used, miss: p.missing, lines: p.lines };
 }
 
 /* ---------- offer notes: where an extra price applies and what it needs ---------- */
-export const MEMBER_NAME: Record<StoreCode, string> = { w: "Willys Plus", h: "Hemköp-kortet", c: "Coop-medlemskap", i: "ICA-kort eller ICA-appen", l: "Lidl Plus" };
-export const STORE_FULL: Record<string, string> = { w: "Willys Vällingby", h: "Hemköp Vällingby C", c: "Coops e-handel i Stockholm", l: "Lidl" };
+export function memberName(s: StoreCode): string {
+  return { w: "Willys Plus", h: t("mem_h"), c: t("mem_c"), i: t("mem_i"), l: "Lidl Plus", o: "" }[s];
+}
+const storeFull = (s: StoreCode) => ({ w: "Willys Vällingby", h: "Hemköp Vällingby C", c: t("coop_online_sthlm"), l: "Lidl" } as Record<string, string>)[s];
 export function offerWhere(s: StoreCode, c: { store?: string; p?: Product }) {
-  if (s === "i") return { short: "bara " + (c.store || "en ICA-butik"), long: "gäller bara i " + (c.store || "en ICA-butik") };
-  if (s === "l") return { short: "alla Lidl", long: "gäller i alla Lidl-butiker i Stockholmsområdet" };
-  if (s === "c") return { short: "e-handel", long: "gäller Coops e-handel i Stockholm, kan skilja i butik" };
+  if (s === "i") { const st = c.store || t("an_ica_store"); return { short: t("ow_only", { store: st }), long: t("ow_only_long", { store: st }) }; }
+  if (s === "l") return { short: t("ow_all_lidl"), long: t("ow_all_lidl_long") };
+  if (s === "c") return { short: t("ow_eshop"), long: t("ow_coop_long") };
   const os = c.p?.os;
-  if (os === 1) return { short: "bara " + STORE_FULL[s].replace(/^\S+\s/, ""), long: "gäller bara i " + STORE_FULL[s] };
-  if (os === 0) return { short: "hela kedjan", long: `gäller i alla ${STORES[s]}-butiker` };
-  return { short: STORE_FULL[s], long: "hämtat för " + STORE_FULL[s] };
+  if (os === 1) return { short: t("ow_only", { store: storeFull(s).replace(/^\S+\s/, "") }), long: t("ow_only_long", { store: storeFull(s) }) };
+  if (os === 0) return { short: t("ow_whole_chain"), long: t("ow_chain_long", { store: STORES[s] }) };
+  return { short: storeFull(s), long: t("ow_fetched_for", { store: storeFull(s) }) };
 }
 export function offerNote(s: StoreCode | null, c: Cost | null) {
   if (!s || !c || !c.offer) return "";
-  return `Extrapris, ${offerWhere(s, c).long}${c.member ? `, kräver ${MEMBER_NAME[s]}` : ""}${c.dealQty ? `, gäller vid köp av ${c.dealQty} st` : ""}`;
+  return [t("extra_price"), offerWhere(s, c).long, c.member && t("requires", { what: memberName(s) }), c.dealQty && t("deal_qty", { n: c.dealQty })].filter(Boolean).join(", ");
 }
 export function offerShort(s: StoreCode, c: Cost | null) {
   if (!c || !c.offer) return "";
-  return offerWhere(s, c).short + (c.member ? " · medlem" : "") + (c.dealQty ? ` · ${c.dealQty} för` : "");
+  return [offerWhere(s, c).short, c.member && t("member_lc"), c.dealQty && t("deal_short", { n: c.dealQty })].filter(Boolean).join(" · ");
 }
 
 /* ---------- labels ---------- */

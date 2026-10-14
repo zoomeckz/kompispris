@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useApp } from "@/hooks/useApp";
-import { lib, norm } from "@/lib/engine";
+import { STORES, lib, norm } from "@/lib/engine";
 import { Seg } from "@/components/ui";
 import { IcaRow, LidlRow, OfferRow } from "@/components/rows";
+import { t, tp } from "@/i18n";
 
 type Src = "all" | "w" | "h" | "c" | "i" | "l";
 export default function Offers() {
@@ -19,21 +20,21 @@ export default function Offers() {
   all.forEach((it) => { if (noMember && it.member) return; counts.all++; counts[it.s] = (counts[it.s] || 0) + 1; });
   let items = all.filter((it) => (src === "all" || it.s === src) && !(noMember && it.member));
   const qt = norm(q).split(" ").filter(Boolean);
-  if (qt.length) items = items.filter((it) => qt.every((t) => it.x.nn.includes(t)));
+  if (qt.length) items = items.filter((it) => qt.every((w) => it.x.nn.includes(w)));
   items.sort(sort === "price" ? (a, b) => a.price - b.price : (a, b) => b.pct - a.pct);
   return (
     <div className="stack">
-      <div className="row between"><h2>Veckans erbjudanden</h2><span className="small muted">{counts.all} st</span></div>
-      <Seg label="Butik" value={src} onChange={setSrc} options={(["all", "w", "h", "c", "i", "l"] as Src[]).map((k) => [k, <>{({ all: "Alla", w: "Willys", h: "Hemköp", c: "Coop", i: "ICA", l: "Lidl" } as any)[k]} <span className="muted">{counts[k] || 0}</span></>])} />
-      <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filtrera, t.ex. kyckling eller kaffe" aria-label="Filtrera erbjudanden" />
+      <div className="row between"><h2>{t("offers_title")}</h2><span className="small muted">{counts.all}</span></div>
+      <Seg label={t("store")} value={src} onChange={setSrc} options={(["all", "w", "h", "c", "i", "l"] as Src[]).map((k) => [k, <>{k === "all" ? t("all") : STORES[k]} <span className="muted">{counts[k] || 0}</span></>])} />
+      <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("filter_offers_ph")} aria-label={t("filter_offers_aria")} />
       <div className="row">
-        <div className="grow"><Seg label="Sortera" value={sort} onChange={setSort} options={[["pct", "Störst rabatt"], ["price", "Lägst pris"]]} /></div>
-        <label className="small row" style={{ gap: 6, flexDirection: "row" }}><input type="checkbox" checked={noMember} onChange={(e) => setNoMember(e.target.checked)} /> Utan medlemskrav</label>
+        <div className="grow"><Seg label={t("sort")} value={sort} onChange={setSort} options={[["pct", t("biggest_discount")], ["price", t("lowest_price")]]} /></div>
+        <label className="small row" style={{ gap: 6, flexDirection: "row" }}><input type="checkbox" checked={noMember} onChange={(e) => setNoMember(e.target.checked)} /> {t("no_member_req")}</label>
       </div>
       <div className="card">
-        <div className="small muted">{items.length} erbjudanden{items.length > 200 ? ", visar de 200 första" : ""}. ICA visar fyra butiker nära Vällingby.</div>
+        <div className="small muted">{tp("n_offers", items.length)}{items.length > 200 ? t("showing_first_n", { n: 200 }) : ""}. {t("ica_four_stores")}</div>
         <div className="list">{items.slice(0, 200).map((it) => it.kind === "l" ? <LidlRow key={it.x.key} x={it.x} /> : it.kind === "i" ? <IcaRow key={it.x.key} x={it.x} /> : <OfferRow key={it.x.key} p={it.x} />)}
-          {!items.length && <div className="empty-state">Inga erbjudanden matchar.</div>}</div>
+          {!items.length && <div className="empty-state">{t("no_offers_match")}</div>}</div>
       </div>
     </div>
   );

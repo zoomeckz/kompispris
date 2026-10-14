@@ -1,4 +1,5 @@
 import { Cost, Ingredient, Line, Product, STORES, Recipe, ShoppingList, ingGrams, modeResult, offerNote, totals, Mode, lib, groupFor, Unit } from "./engine";
+import { fmtDate, t, unitLabel } from "@/i18n";
 
 export const kr = (v?: number | null) => (v == null || isNaN(v) ? "–" : v.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kr");
 export const kr0 = (v?: number | null) => (v == null || isNaN(v) ? "–" : v.toLocaleString("sv-SE", { maximumFractionDigits: 0 }) + " kr");
@@ -6,48 +7,47 @@ export const num2 = (v: number) => v.toLocaleString("sv-SE", { minimumFractionDi
 export const n0 = (v?: number) => Math.round(v || 0).toLocaleString("sv-SE");
 export const n1 = (v?: number) => (Math.round((v || 0) * 10) / 10).toLocaleString("sv-SE");
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
-export const pl = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-export const fmtQty = (ing: Ingredient) => `${(Math.round((+ing.qty || 0) * 100) / 100).toLocaleString("sv-SE")} ${ing.unit}`;
+export const fmtQty = (ing: Ingredient) => `${(Math.round((+ing.qty || 0) * 100) / 100).toLocaleString("sv-SE")} ${unitLabel(ing.unit)}`;
 export function packTxt(c: Cost | null) {
-  if (!c) return ""; if (c.pantry) return "hemma";
-  if (!c.packs) return c.grams ? `${n0(c.grams)} g` : "lösvikt";
-  return `${c.packs} förp`;
+  if (!c) return ""; if (c.pantry) return t("at_home");
+  if (!c.packs) return c.grams ? `${n0(c.grams)} ${unitLabel("g")}` : t("loose_weight");
+  return t("pack_short", { n: c.packs });
 }
-export const cmpTxt = (p: Product) => (p.cp ? `Jfr ${p.cp.toLocaleString("sv-SE", { minimumFractionDigits: 2 })} kr/${p.cu || "st"}` : "");
+export const cmpTxt = (p: Product) => (p.cp ? t("cmp_prefix", { v: `${p.cp.toLocaleString("sv-SE", { minimumFractionDigits: 2 })} kr/${unitLabel(p.cu || "st")}` }) : "");
 export function lineQty(l: Line) {
   const c = l.c; if (!c) return `${fmtQty(l.ing)} `;
-  if (c.packs) return c.packs + " st ";
-  const g = c.grams || ingGrams(l.ing); return g ? n0(g) + " g " : "";
+  if (c.packs) return `${c.packs} ${unitLabel("st")} `;
+  const g = c.grams || ingGrams(l.ing); return g ? `${n0(g)} ${unitLabel("g")} ` : "";
 }
-export const offerEnd = (ts?: number | null) => (ts ? "t.o.m. " + new Date(ts * 1000).toLocaleDateString("sv-SE", { day: "numeric", month: "short" }) : "");
+export const offerEnd = (ts?: number | null) => (ts ? t("until", { date: fmtDate(new Date(ts * 1000), { day: "numeric", month: "short" }) }) : "");
 
 /* ---------- text exports ---------- */
 function buyLines(lines: Line[], skipDone = false) {
   const by: Record<string, Line[]> = {}; let txt = "";
   lines.forEach((l) => { if (l.ing.pantry) return; if (skipDone && l.ing.done) return; const k = l.s || "x"; (by[k] = by[k] || []).push(l); });
   for (const s of Object.keys(by)) {
-    const name = s === "x" ? "Saknar pris" : STORES[s as keyof typeof STORES]; let sub = 0; txt += `\n${name.toUpperCase()}\n`;
+    const name = s === "x" ? t("missing_price") : STORES[s as keyof typeof STORES]; let sub = 0; txt += `\n${name.toUpperCase()}\n`;
     by[s].forEach((l) => {
       const c = l.c; const v = c ? c.buy : null; sub += v || 0;
       txt += `- ${lineQty(l)}${c?.label || l.ing.label}${v != null ? `: ${kr(v)}` : ""}${c?.offer ? ` (${offerNote(l.s, c)})` : ""}\n`;
     });
-    if (s !== "x") txt += `  Delsumma ${kr(sub)}\n`;
+    if (s !== "x") txt += `  ${t("subtotal")} ${kr(sub)}\n`;
   }
   return txt;
 }
 export function recipeText(r: Recipe, mode: Mode) {
-  const t = totals(r.ings); const por = Math.max(1, +r.portions || 1); const res = modeResult(t, mode);
-  let txt = `${r.name}\n${por} portioner\n\nPer portion: ${n0(t.mac[0] / por)} kcal · protein ${n0(t.mac[1] / por)} g · kolhydrater ${n0(t.mac[2] / por)} g · fett ${n0(t.mac[3] / por)} g\n`;
-  txt += `Att handla för: ${kr(res.sum)} (${res.title}) · per portion ${kr(res.used / por)}\n\nINGREDIENSER\n`;
-  r.ings.forEach((ing) => { txt += `- ${fmtQty(ing)} ${ing.label}${ing.pantry ? " (har hemma)" : ""}\n`; });
-  if (r.notes) txt += `\nGÖR SÅ HÄR\n${r.notes}\n`;
-  txt += `\nINKÖPSLISTA (${res.title})${buyLines(res.lines)}\nAtt betala: ${kr(res.sum)}\n\nPriser från ${lib().updated}. Skapat med KompisPris.\n`;
+  const tot = totals(r.ings); const por = Math.max(1, +r.portions || 1); const res = modeResult(tot, mode);
+  let txt = `${r.name}\n${t("ex_portions", { n: por })}\n\n${t("ex_per_portion", { kcal: n0(tot.mac[0] / por), p: n0(tot.mac[1] / por), k: n0(tot.mac[2] / por), f: n0(tot.mac[3] / por) })}\n`;
+  txt += `${t("ex_to_buy", { sum: kr(res.sum), title: res.title, per: kr(res.used / por) })}\n\n${t("ex_ingredients")}\n`;
+  r.ings.forEach((ing) => { txt += `- ${fmtQty(ing)} ${ing.label}${ing.pantry ? t("ex_have") : ""}\n`; });
+  if (r.notes) txt += `\n${t("ex_how")}\n${r.notes}\n`;
+  txt += `\n${t("ex_list", { title: res.title })}${buyLines(res.lines)}\n${t("ex_to_pay", { sum: kr(res.sum) })}\n\n${t("ex_footer", { date: lib().updated })}\n`;
   return txt;
 }
 export function listText(l: ShoppingList) {
-  const t = totals(l.items); const res = modeResult(t, l.mode || "cheap");
+  const res = modeResult(totals(l.items), l.mode || "cheap");
   const left = res.lines.filter((x) => !x.ing.done && !x.ing.pantry).reduce((a, x) => a + (x.c ? x.c.buy : 0), 0);
-  return `${l.name}\n${res.title}\n${buyLines(res.lines, true)}\nAtt betala: ${kr(left)}\n\nPriser från ${lib().updated}. Skapat med KompisPris.\n`;
+  return `${l.name}\n${res.title}\n${buyLines(res.lines, true)}\n${t("ex_to_pay", { sum: kr(left) })}\n\n${t("ex_footer", { date: lib().updated })}\n`;
 }
 export function downloadText(name: string, txt: string) {
   const file = (name || "kompispris").replace(/[\\/:*?"<>|]+/g, "").trim().slice(0, 80).replace(/[.\s]+$/, "") + ".txt";
@@ -77,10 +77,10 @@ export function mergeRecipe(items: Ingredient[], r: Recipe, portions: number): I
   return out;
 }
 
-/* ---------- example recipe built from real products ---------- */
+/* ---------- example recipe built from real products (ingredient names stay Swedish, they are product searches) ---------- */
 export function exampleRecipe(): Recipe {
   const spec: [string, string, number, Unit, boolean?][] = [["Kycklingfilé", "kycklingfilé", 600, "g"], ["Jasminris", "jasminris", 300, "g"], ["Krossade tomater", "krossade tomater", 400, "g"], ["Gul lök", "gul lök", 1, "st"], ["Matlagningsgrädde", "matlagningsgrädde", 2.5, "dl"], ["Vitlök", "vitlök", 2, "st", true], ["Paprika", "paprika", 1, "st"], ["Ägg", "ägg", 2, "st"], ["Majonnäs", "majonnäs", 2, "tsk"]];
-  const r: Recipe = { id: "example", name: "Exempel: Kycklinggryta med ris", portions: 4, notes: "Bryn kycklingen, fräs lök, vitlök och paprika. Häll i tomater och grädde och låt puttra 15 min. Servera med ris. Kokta ägg med en klick majonnäs vid sidan om.", ings: [] };
+  const r: Recipe = { id: "example", name: t("example_prefix") + t("example_name"), portions: 4, notes: t("example_notes"), ings: [] };
   for (const [label, q, qty, unit, pantry] of spec) {
     const ing: Ingredient = { id: uid(), label, q, qty, unit, picks: {}, macro: null, pantry: !!pantry };
     if (groupFor(ing).length) r.ings.push(ing);

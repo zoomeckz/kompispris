@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase, SUPABASE_URL_PUBLIC } from "@/lib/supabase";
+import { t } from "@/i18n";
 import { DEFAULT_SETTINGS, Recipe, Settings, ShoppingList, parseLibrary, setLibrary, setSettings as engineSetSettings, Library } from "@/lib/engine";
 
 const LS_SETTINGS = "kompispris.settings";
@@ -35,7 +36,7 @@ async function fetchLibrary(): Promise<any> {
       if (meta?.version) { const r = await fetch(`${base}/products.json?v=${meta.version}`); if (r.ok) return r.json(); }
     } catch { /* fall back */ }
   }
-  const r = await fetch("/library/products.json"); if (!r.ok) throw new Error("Prisbiblioteket kunde inte laddas"); return r.json();
+  const r = await fetch("/library/products.json"); if (!r.ok) throw new Error(t("lib_load_failed")); return r.json();
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -102,15 +103,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const saveRecipe = useCallback((r: Recipe, now?: boolean) => {
-    if (!supabase || !user) { toast("Logga in för att spara"); return; }
+    if (!supabase || !user) { toast(t("log_in_to_save")); return; }
     const row = { ...r, updated_at: new Date().toISOString() };
     setRecipes((m) => ({ ...m, [r.id]: row }));
-    debounced("r" + r.id, () => { supabase!.from("recipes").update({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings, updated_at: row.updated_at }).eq("id", r.id).then(({ error }) => { if (error) toast("Kunde inte spara receptet"); }); }, now);
+    debounced("r" + r.id, () => { supabase!.from("recipes").update({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings, updated_at: row.updated_at }).eq("id", r.id).then(({ error }) => { if (error) toast(t("save_recipe_failed")); }); }, now);
   }, [user?.id]);
   const createRecipe = useCallback(async (r: Omit<Recipe, "id">) => {
-    if (!supabase || !user) { toast("Logga in för att spara recept"); return null; }
+    if (!supabase || !user) { toast(t("log_in_to_save_recipes")); return null; }
     const { data, error } = await supabase.from("recipes").insert({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings }).select().single();
-    if (error) { toast("Kunde inte skapa receptet"); return null; }
+    if (error) { toast(t("create_recipe_failed")); return null; }
     setRecipes((m) => ({ [data.id]: data, ...m })); return data as Recipe;
   }, [user?.id]);
   const deleteRecipe = useCallback(async (id: string) => {
@@ -120,15 +121,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const saveList = useCallback((l: ShoppingList, now?: boolean) => {
-    if (!supabase || !user) { toast("Logga in för att spara"); return; }
+    if (!supabase || !user) { toast(t("log_in_to_save")); return; }
     const row = { ...l, updated_at: new Date().toISOString() };
     setLists((m) => ({ ...m, [l.id]: row }));
-    debounced("l" + l.id, () => { supabase!.from("shopping_lists").update({ name: l.name, mode: l.mode, items: l.items, updated_at: row.updated_at }).eq("id", l.id).then(({ error }) => { if (error) toast("Kunde inte spara listan"); }); }, now);
+    debounced("l" + l.id, () => { supabase!.from("shopping_lists").update({ name: l.name, mode: l.mode, items: l.items, updated_at: row.updated_at }).eq("id", l.id).then(({ error }) => { if (error) toast(t("save_list_failed")); }); }, now);
   }, [user?.id]);
   const createList = useCallback(async (l: Omit<ShoppingList, "id">) => {
-    if (!supabase || !user) { toast("Logga in för att skapa matlistor"); return null; }
+    if (!supabase || !user) { toast(t("log_in_to_create_lists")); return null; }
     const { data, error } = await supabase.from("shopping_lists").insert({ name: l.name, mode: l.mode, items: l.items }).select().single();
-    if (error) { toast("Kunde inte skapa listan"); return null; }
+    if (error) { toast(t("create_list_failed")); return null; }
     setLists((m) => ({ [data.id]: data, ...m })); return data as ShoppingList;
   }, [user?.id]);
   const deleteList = useCallback(async (id: string) => {

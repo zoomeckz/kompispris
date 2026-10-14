@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Product, STORES, StoreCode, unitPrice } from "@/lib/engine";
 import { n0, n1, num2 } from "@/lib/format";
+import { t } from "@/i18n";
 
 export const StoreChip = ({ s }: { s: StoreCode }) => <span className={`chip ${s}`}>{STORES[s]}</span>;
 
@@ -13,11 +14,11 @@ export const Tag = ({ value, off, unit }: { value: number; off?: boolean; unit?:
   <span className={`tag ${off ? "off" : ""}`}>{num2(value)}{unit && <small>{unit}</small>}</span>
 );
 
-export function MacroLine({ m, label = "per 100 g" }: { m: number[] | null; label?: string }) {
-  if (!m) return <span className="small muted">Näringsvärde saknas</span>;
+export function MacroLine({ m, label = t("per_100g") }: { m: number[] | null; label?: string }) {
+  if (!m) return <span className="small muted">{t("nutrition_missing")}</span>;
   return (
     <div className="macros">
-      <span><b>{n0(m[0])}</b> kcal</span><span>P <b>{n1(m[1])}</b></span><span>K <b>{n1(m[2])}</b></span><span>F <b>{n1(m[3])}</b></span><span>{label}</span>
+      <span><b>{n0(m[0])}</b> {t("m_kcal")}</span><span>{t("m_p")} <b>{n1(m[1])}</b></span><span>{t("m_k")} <b>{n1(m[2])}</b></span><span>{t("m_f")} <b>{n1(m[3])}</b></span><span>{label}</span>
     </div>
   );
 }
@@ -32,7 +33,8 @@ export function Seg<T extends string>({ value, options, onChange, label }: { val
     const el = ref.current; if (!el) return;
     const measure = () => { const b = el.querySelector<HTMLElement>("button[aria-pressed=true]"); setInd(b ? { left: b.offsetLeft, width: b.offsetWidth } : null); };
     measure();
-    const ro = new ResizeObserver(measure); ro.observe(el);
+    // buttons change width on their own when the web font arrives, so watch them as well as the bar
+    const ro = new ResizeObserver(measure); ro.observe(el); el.querySelectorAll("button").forEach((b) => ro.observe(b));
     return () => ro.disconnect();
   }, [value, options.length]);
   return (
@@ -69,7 +71,7 @@ export function Sheet({ title, onClose, header, children, tall }: { title: React
       <div className={`sheet ${tall ? "tall" : ""}`} role="dialog" aria-modal="true">
         <div className="hd">
           <span className="grab" aria-hidden="true" />
-          <div className="row between"><h2>{title}</h2><button className="btn ghost" onClick={onClose}>Stäng</button></div>
+          <div className="row between"><h2>{title}</h2><button className="btn ghost" onClick={onClose}>{t("close")}</button></div>
           {header}
         </div>
         <div className="bd">{children}</div>

@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
+import { RowButton, Sheet } from "./ui";
+import { LANGS, t, tp, useLang } from "@/i18n";
 
 const I = {
   recept: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3h10l3 3v15H6z" /><path d="M9 9h7M9 13h7M9 17h4" /></svg>,
@@ -8,10 +11,13 @@ const I = {
   varor: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="6" /><path d="m20 20-4.5-4.5" /></svg>,
   admin: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>,
   set: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>,
+  lang: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" /></svg>,
 };
 
 export default function Layout() {
   const { lib, libError, isAdmin, user } = useApp();
+  const { lang, setLang } = useLang();
+  const [langOpen, setLangOpen] = useState(false);
   const loc = useLocation();
   const tab = (to: string, label: string, icon: JSX.Element, end = false) => (
     <NavLink to={to} end={end} className={({ isActive }) => (isActive ? "on" : "")} aria-label={label}>{icon}{label}</NavLink>
@@ -20,27 +26,35 @@ export default function Layout() {
     <>
       <div className="wrap">
         <header className="top">
-          <Link to="/" style={{ textDecoration: "none", color: "inherit" }}><h1>Kompis<span>Pris</span></h1></Link>
+          <Link to="/" style={{ textDecoration: "none", color: "inherit" }}><h1 dir="ltr">Kompis<span>Pris</span></h1></Link>
           <div className="row" style={{ gap: 10, flexWrap: "nowrap" }}>
-            <div className="status">{lib ? <>{lib.P.length.toLocaleString("sv-SE")} varor<br />priser från {lib.updated}</> : libError ? "Fel vid inläsning" : "Laddar varor…"}</div>
-            <NavLink to="/installningar" className={({ isActive }) => `iconbtn ${isActive ? "on" : ""}`} aria-label="Inställningar och konto" title={user ? "Inställningar och konto" : "Inställningar"}>{I.set}</NavLink>
+            <div className="status">{lib ? <>{tp("status_products", lib.P.length)}<br />{t("status_prices_from", { date: lib.updated })}</> : libError ? t("status_error") : t("status_loading")}</div>
+            <button className="iconbtn lang" onClick={() => setLangOpen(true)} aria-label={t("language")} title={t("language")}>{I.lang}<span>{lang.toUpperCase()}</span></button>
+            <NavLink to="/installningar" className={({ isActive }) => `iconbtn ${isActive ? "on" : ""}`} aria-label={user ? t("settings_and_account") : t("settings")} title={user ? t("settings_and_account") : t("settings")}>{I.set}</NavLink>
           </div>
         </header>
         <main>
-          {libError ? <div className="card empty-state">Prisbiblioteket kunde inte laddas. Ladda om sidan.</div>
-            : !lib && loc.pathname !== "/logga-in" ? <div className="loading">Hämtar prisbiblioteket…<div className="bar"><i /></div></div>
+          {libError ? <div className="card empty-state">{t("lib_error")}</div>
+            : !lib && loc.pathname !== "/logga-in" ? <div className="loading">{t("lib_loading")}<div className="bar"><i /></div></div>
             : <div className="page" key={loc.pathname}><Outlet /></div>}
         </main>
       </div>
-      <nav className="tabs" aria-label="Huvudmeny">
+      <nav className="tabs" aria-label={t("nav_aria")}>
         <div className="in">
-          {tab("/", "Recept", I.recept, true)}
-          {tab("/listor", "Matlistor", I.listor)}
-          {tab("/erbjudanden", "Erbjudanden", I.erbj)}
-          {tab("/varor", "Varor", I.varor)}
-          {isAdmin && tab("/admin", "Admin", I.admin)}
+          {tab("/", t("nav_recipes"), I.recept, true)}
+          {tab("/listor", t("nav_lists"), I.listor)}
+          {tab("/erbjudanden", t("nav_offers"), I.erbj)}
+          {tab("/varor", t("nav_products"), I.varor)}
+          {isAdmin && tab("/admin", t("nav_admin"), I.admin)}
         </div>
       </nav>
+      {langOpen && <Sheet title={t("language")} onClose={() => setLangOpen(false)}>
+        <div className="list">{LANGS.map((l) => (
+          <RowButton key={l.code} className={`item langrow ${l.code === lang ? "on" : ""}`} onClick={() => { setLangOpen(false); if (l.code !== lang) setLang(l.code); }}>
+            <div className="grow t" lang={l.code} dir={l.code === "fa" ? "rtl" : "ltr"}>{l.name}</div>
+            {l.code === lang && <span className="pill okp">✓</span>}
+          </RowButton>))}</div>
+      </Sheet>}
     </>
   );
 }
