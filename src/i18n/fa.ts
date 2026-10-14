@@ -423,4 +423,6 @@ export const fa: Dict = {
   run_log: "دریافت‌های قبلی ({n})",
   n_failed: "{n} ناموفق|{n} ناموفق",
   show_error: "نمایش خطا",
+  clear_log: "پاک کردن گزارش",
+  log_cleared: "گزارش پاک شد",
 };

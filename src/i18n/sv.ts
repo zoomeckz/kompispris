@@ -442,6 +442,8 @@ export const sv = {
   run_log: "Tidigare körningar ({n})",
   n_failed: "{n} misslyckad|{n} misslyckade",
   show_error: "Visa felet",
+  clear_log: "Töm loggen",
+  log_cleared: "Loggen är tömd",
 };
 
 export type Key = keyof typeof sv;

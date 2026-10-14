@@ -423,4 +423,6 @@ export const en: Dict = {
   run_log: "Earlier runs ({n})",
   n_failed: "{n} failed|{n} failed",
   show_error: "Show error",
+  clear_log: "Clear the log",
+  log_cleared: "The log has been cleared",
 };

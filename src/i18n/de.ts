@@ -423,4 +423,6 @@ export const de: Dict = {
   run_log: "Frühere Abrufe ({n})",
   n_failed: "{n} fehlgeschlagen|{n} fehlgeschlagen",
   show_error: "Fehler anzeigen",
+  clear_log: "Protokoll leeren",
+  log_cleared: "Das Protokoll wurde geleert",
 };

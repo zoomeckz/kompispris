@@ -423,4 +423,6 @@ export const es: Dict = {
   run_log: "Actualizaciones anteriores ({n})",
   n_failed: "{n} fallida|{n} fallidas",
   show_error: "Ver error",
+  clear_log: "Vaciar el registro",
+  log_cleared: "Se ha vaciado el registro",
 };

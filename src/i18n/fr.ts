@@ -423,4 +423,6 @@ export const fr: Dict = {
   run_log: "Récupérations précédentes ({n})",
   n_failed: "{n} échec|{n} échecs",
   show_error: "Afficher l'erreur",
+  clear_log: "Vider le journal",
+  log_cleared: "Le journal a été vidé",
 };

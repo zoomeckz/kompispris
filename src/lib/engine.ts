@@ -37,7 +37,8 @@ export type Mode = "cheap" | "k" | StoreCode;
 /** the person's own recipe categories, which recipe is in which, the order and what is folded (see lib/org.ts) */
 export interface RecipeCat { id: string; name: string; open: boolean }
 export interface RecipeOrg { cats: RecipeCat[]; of: Record<string, string>; order: string[]; noneOpen?: boolean }
-export interface Settings { offers: boolean; member: boolean; stores: Record<StoreCode, boolean>; org?: RecipeOrg }
+/** runsClearedAt: the admin emptied the scrape log at this time; older runs are hidden */
+export interface Settings { offers: boolean; member: boolean; stores: Record<StoreCode, boolean>; org?: RecipeOrg; runsClearedAt?: string }
 export const DEFAULT_SETTINGS: Settings = { offers: true, member: false, stores: { w: true, h: true, c: true, i: true, l: true, o: true } };
 
 export interface Cost {

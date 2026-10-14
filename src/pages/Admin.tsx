@@ -41,7 +41,7 @@ function BarList({ rows }: { rows: { term: string; n: number }[] }) {
 }
 
 export default function Admin() {
-  const { isAdmin, user, authReady, toast } = useApp();
+  const { isAdmin, user, authReady, toast, settings, setSettings } = useApp();
   const [days, setDays] = useState<"7" | "30" | "90">("30");
   const [ov, setOv] = useState<Overview | null>(null);
   const [signups, setSignups] = useState<{ day: string; n: number }[]>([]);
@@ -69,6 +69,10 @@ export default function Admin() {
   }, [isAdmin, days]);
   // follow a running scrape
   const active = runs.some((r) => r.status === "queued" || r.status === "running");
+  // emptying the log only hides what came before; a run that is still going always shows
+  const cleared = settings.runsClearedAt ? +new Date(settings.runsClearedAt) : 0;
+  const shown = runs.filter((r) => +new Date(r.created_at) > cleared || r.status === "queued" || r.status === "running");
+  const older = shown.slice(1); const olderFailed = older.filter((r) => r.status === "failed").length;
   useEffect(() => { if (!active) return; const tm = setInterval(loadRuns, 30000); return () => clearInterval(tm); }, [active]);
 
   if (!authReady) return <div className="loading">{t("admin_checking")}</div>;
@@ -115,11 +119,12 @@ export default function Admin() {
         <div className="small num">{t("last_fetched")} <b>{lib().updated}</b> · Willys {byStore.w || 0} · Hemköp {byStore.h || 0} · Coop {byStore.c || 0} · Lidl {tp("n_offers", lib().lidl.length)} · ICA {tp("n_offers", lib().ica.length)} · {t("offers_at_chains", { n: offers })}</div>
         <div className="row"><button className="btn primary" disabled={busy || active} onClick={scrape}>{active ? t("scrape_running") : busy ? t("starting") : t("scrape")}</button></div>
         <div className="small muted">{t("scrape_desc")}</div>
-        {runs.length > 0 && <RunRow r={runs[0]} latest />}
-        {runs.length > 1 && <details className="runlog">
-          <summary>{t("run_log", { n: runs.length - 1 })}{runs.slice(1).some((r) => r.status === "failed") ? " · " + tp("n_failed", runs.slice(1).filter((r) => r.status === "failed").length) : ""}</summary>
-          <div className="list">{runs.slice(1).map((r) => <RunRow key={r.id} r={r} />)}</div>
+        {shown.length > 0 && <RunRow r={shown[0]} latest />}
+        {older.length > 0 && <details className="runlog">
+          <summary>{t("run_log", { n: older.length })}{olderFailed ? " · " + tp("n_failed", olderFailed) : ""}</summary>
+          <div className="list">{older.map((r) => <RunRow key={r.id} r={r} />)}</div>
         </details>}
+        {shown.some((r) => r.status !== "queued" && r.status !== "running") && <div className="row"><button className="btn small" onClick={() => { setSettings({ ...settings, runsClearedAt: new Date().toISOString() }); toast(t("log_cleared")); }}>{t("clear_log")}</button></div>}
       </div>
     </div>
   );
