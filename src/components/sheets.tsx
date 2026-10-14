@@ -25,7 +25,7 @@ export function AddItemSheet({ onClose, onAdd }: { onClose: () => void; onAdd: (
     onAdd(d, locked); onClose();
   };
   return (
-    <Sheet title="Lägg till" onClose={onClose} header={<>
+    <Sheet title="Lägg till" tall onClose={onClose} header={<>
       <input type="search" autoFocus placeholder="Skriv t.ex. ägg, majonnäs, kycklingfilé" aria-label="Vara" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="row" style={{ flexWrap: "nowrap" }}>
         <input type="text" inputMode="decimal" placeholder={effUnit === "st" ? "antal" : "mängd"} aria-label="Mängd" value={qty} onChange={(e) => setQty(e.target.value)} style={{ width: 90 }} />
@@ -60,7 +60,7 @@ export function PickSheet({ ing, s, onClose, onChange }: { ing: Ingredient; s: S
       : [...auto].sort((a, b) => ((isI ? icaBuy(ing, a) : lidlBuy(ing, a))?.buy ?? 1e9) - ((isI ? icaBuy(ing, b) : lidlBuy(ing, b))?.buy ?? 1e9));
     const top = (o: any) => { const b = isI ? icaBuy(ing, o) : lidlBuy(ing, o); return b ? <div className="small" style={{ fontWeight: 600 }}>Kostar {kr(b.buy)} för det du behöver{(ing as any)[lockKey] === o.key ? " · låst" : ""}</div> : null; };
     return (
-      <Sheet title={`${STORES[s]}: ${ing.label}`} onClose={onClose} header={<input type="search" placeholder={`Sök bland ${STORES[s]}s erbjudanden`} value={q} onChange={(e) => setQ(e.target.value)} />}>
+      <Sheet title={`${STORES[s]}: ${ing.label}`} tall onClose={onClose} header={<input type="search" placeholder={`Sök bland ${STORES[s]}s erbjudanden`} value={q} onChange={(e) => setQ(e.target.value)} />}>
         {(ing as any)[lockKey] && <button className="btn small primary" style={{ marginTop: 10 }} onClick={() => done({ [lockKey]: null } as any)}>Välj billigaste erbjudandet automatiskt igen</button>}
         {isI && <IcaOwnPrice ing={ing} onSave={(ica) => done({ ica })} />}
         <div className="small muted" style={{ marginTop: 10 }}>{q.trim() ? "" : auto.length ? `${auto.length} erbjudanden matchar, billigast först.` : "Inget erbjudande matchar just nu. Sök ovan."}</div>
@@ -72,7 +72,7 @@ export function PickSheet({ ing, s, onClose, onChange }: { ing: Ingredient; s: S
   const pool = q.trim() ? search(q, { stores: [s], limit: 60 }) : groupFor(ing).filter((p) => p.s === s);
   const rows = pool.map((p) => ({ p, b: buyFor(ing, p) })).filter((x) => x.b).sort((a, b) => a.b!.buy - b.b!.buy).slice(0, 60);
   return (
-    <Sheet title={`${STORES[s]}: ${ing.label}`} onClose={onClose} header={<input type="search" placeholder={`Sök annan vara i ${STORES[s]}`} value={q} onChange={(e) => setQ(e.target.value)} />}>
+    <Sheet title={`${STORES[s]}: ${ing.label}`} tall onClose={onClose} header={<input type="search" placeholder={`Sök annan vara i ${STORES[s]}`} value={q} onChange={(e) => setQ(e.target.value)} />}>
       {locked && ing.q && <button className="btn small primary" style={{ marginTop: 10 }} onClick={() => { const p = { ...ing.picks }; delete p[s]; done({ picks: p }); }}>Välj billigaste automatiskt igen</button>}
       <div className="small muted" style={{ marginTop: 10 }}>{rows.length ? "Billigast att köpa för mängden först. Tryck för att låsa en vara." : "Inga träffar. Sök ovan."}</div>
       <div className="list">{rows.map(({ p, b }) => (
@@ -114,7 +114,7 @@ export function MacroSheet({ ing, onClose, onChange }: { ing: Ingredient; onClos
   const res = searchSlv(q);
   const done = (macro: Ingredient["macro"]) => { onChange({ ...ing, macro }); onClose(); };
   return (
-    <Sheet title="Näringsvärde" onClose={onClose} header={<input type="search" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Sök i Livsmedelsverkets databas" />}>
+    <Sheet title="Näringsvärde" tall onClose={onClose} header={<input type="search" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Sök i Livsmedelsverkets databas" />}>
       <div className="card stack" style={{ marginTop: 12 }}>
         <h3>Eget värde per 100 g</h3>
         <div className="row">{["kcal", "P", "K", "F"].map((l, k) => <input key={l} type="text" inputMode="decimal" placeholder={l} aria-label={l} value={c[k]} style={{ width: 72 }} onChange={(e) => setC(c.map((v, i) => (i === k ? e.target.value : v)))} />)}

@@ -67,6 +67,7 @@ export default function RecipeEditor() {
           <div className="small muted">Att handla för · {res.title}</div>
           <div className="big num">{kr0(res.sum)}</div>
           <div className="small muted num">Billigaste förpackningarna som räcker till receptet{app.settings.offers ? ", med erbjudanden" : ""}.{res.miss ? <span style={{ color: "var(--warn)" }}> {res.miss} saknar pris.</span> : null}</div>
+          {r.ings.length > 0 && r.ings.every((i) => i.pantry) && <div className="banner" style={{ marginTop: 8 }}>Alla ingredienser är markerade som "Har hemma", så det finns inget att handla. Avmarkera de du behöver köpa.</div>}
         </div>
         <div className="row between num" style={{ borderTop: "1px dashed var(--line)", paddingTop: 10 }}>
           <div><div className="small muted">Per portion ({por})</div><div style={{ fontFamily: "var(--display)", fontSize: 24, fontWeight: 700 }}>{kr(res.used / por)}</div></div>

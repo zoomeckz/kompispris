@@ -157,5 +157,5 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveRecipe, deleteRecipe, createRecipe, saveList, deleteList, createList, logEvent, toast, version, bump,
   }), [lib, libError, session, isAdmin, authReady, settings, recipes, lists, version, setSettings, saveRecipe, saveList, createRecipe, createList, deleteRecipe, deleteList, logEvent, toast, bump]);
 
-  return <Ctx.Provider value={value}>{children}{toastMsg && <div className="toast" role="status">{toastMsg}</div>}</Ctx.Provider>;
+  return <Ctx.Provider value={value}>{children}{toastMsg && <div className="toast" role="status" key={toastMsg}>{toastMsg}</div>}</Ctx.Provider>;
 }

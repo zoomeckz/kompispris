@@ -29,7 +29,7 @@ export default function Layout() {
         <main>
           {libError ? <div className="card empty-state">Prisbiblioteket kunde inte laddas. Ladda om sidan.</div>
             : !lib && loc.pathname !== "/logga-in" ? <div className="loading">Hämtar prisbiblioteket…<div className="bar"><i /></div></div>
-            : <Outlet />}
+            : <div className="page" key={loc.pathname}><Outlet /></div>}
         </main>
       </div>
       <nav className="tabs" aria-label="Huvudmeny">
