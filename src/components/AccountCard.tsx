@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { HAS_ACCOUNTS } from "@/lib/db";
 import { useApp } from "@/hooks/useApp";
 import { t } from "@/i18n";
 
@@ -7,7 +7,7 @@ import { t } from "@/i18n";
 export default function AccountCard({ what = t("acc_what_save") }: { what?: string }) {
   const { user, authReady } = useApp();
   if (user) return null;
-  if (!supabase) return <div className="card small muted">{t("acc_disabled")}</div>;
+  if (!HAS_ACCOUNTS) return <div className="card small muted">{t("acc_disabled")}</div>;
   if (!authReady) return <div className="card small muted">{t("acc_checking")}</div>;
   return (
     <div className="card stack" style={{ borderColor: "var(--accent)" }}>

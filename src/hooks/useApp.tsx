@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase, SUPABASE_URL_PUBLIC } from "@/lib/supabase";
+import { HAS_ACCOUNTS, SUPABASE_URL_PUBLIC, db } from "@/lib/db";
 import { Key, t } from "@/i18n";
 import { DEFAULT_SETTINGS, Recipe, Settings, ShoppingList, parseLibrary, setLibrary, setSettings as engineSetSettings, Library } from "@/lib/engine";
 
@@ -46,7 +46,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lib, setLib] = useState<Library | null>(null);
   const [libError, setLibError] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [authReady, setAuthReady] = useState(!supabase);
+  const [authReady, setAuthReady] = useState(!HAS_ACCOUNTS);
   const [isAdmin, setIsAdmin] = useState(false);
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadLocalSettings(); engineSetSettings(s); return s; });
   const [recipes, setRecipes] = useState<Record<string, Recipe>>({});
@@ -63,18 +63,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fetchLibrary().then((d) => { const l = parseLibrary(d); setLibrary(l); setLib(l); }).catch((e) => setLibError(String(e.message || e)));
   }, []);
 
+  // the database client is fetched here, in parallel with the price library, instead of being part of the first script
   useEffect(() => {
-    if (!supabase) return;
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
-    return () => sub.subscription.unsubscribe();
+    if (!HAS_ACCOUNTS) return;
+    let stop = false; let unsub = () => {};
+    db().then((supabase) => {
+      if (stop) return;
+      const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s)); unsub = () => sub.subscription.unsubscribe();
+      supabase.auth.getSession().then(({ data }) => { setSession(data.session); setAuthReady(true); });
+    }, () => setAuthReady(true));
+    return () => { stop = true; unsub(); };
   }, []);
 
   // load the signed-in user's data
   useEffect(() => {
-    if (!supabase || !user) { setRecipes({}); setLists({}); setIsAdmin(false); return; }
+    if (!HAS_ACCOUNTS || !user) { setRecipes({}); setLists({}); setIsAdmin(false); return; }
     let live = true;
     (async () => {
+      const supabase = await db();
       supabase.rpc("touch_last_seen").then(() => {});
       const [roles, rs, ls, st] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", user.id),
@@ -97,7 +103,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setSettings = useCallback((s: Settings) => {
     engineSetSettings(s); setSettingsState(s);
     try { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)); } catch { /* ignore */ }
-    if (supabase && user) supabase.from("user_settings").upsert({ user_id: user.id, settings: s, updated_at: new Date().toISOString() }).then(() => {});
+    if (HAS_ACCOUNTS && user) db().then((s) => s.from("user_settings").upsert({ user_id: user.id, settings: s, updated_at: new Date().toISOString() })).then(() => {});
   }, [user?.id]);
 
   // Edits are saved automatically a moment after the last change; saveState tells the page what is happening.
@@ -122,48 +128,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const done = (key: string, error: unknown, msg: Key) => { if (error) { mark(key, "error"); toast(t(msg)); } else if (!queued.current[key]) mark(key, "saved"); };
 
   const saveRecipe = useCallback((r: Recipe, now?: boolean) => {
-    if (!supabase || !user) { toast(t("log_in_to_save")); return; }
+    if (!HAS_ACCOUNTS || !user) { toast(t("log_in_to_save")); return; }
     const row = { ...r, updated_at: new Date().toISOString() }; const k = "r" + r.id;
     setRecipes((m) => ({ ...m, [r.id]: row })); mark(k, "pending");
-    debounced(k, () => { mark(k, "saving"); supabase!.from("recipes").update({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings, updated_at: row.updated_at }).eq("id", r.id).select("id").then(({ data, error }) => done(k, error || !data?.length, "save_recipe_failed")); }, now);
+    debounced(k, () => { mark(k, "saving"); db().then((s) => s.from("recipes").update({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings, updated_at: row.updated_at }).eq("id", r.id).select("id")).then(({ data, error }) => done(k, error || !data?.length, "save_recipe_failed"), (e) => done(k, e || true, "save_recipe_failed")); }, now);
   }, [user?.id]);
   const createRecipe = useCallback(async (r: Omit<Recipe, "id">) => {
-    if (!supabase || !user) { toast(t("log_in_to_save_recipes")); return null; }
+    if (!HAS_ACCOUNTS || !user) { toast(t("log_in_to_save_recipes")); return null; }
+    const supabase = await db();
     const { data, error } = await supabase.from("recipes").insert({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings }).select().single();
     if (error) { toast(t("create_recipe_failed")); return null; }
     setRecipes((m) => ({ [data.id]: data, ...m })); mark("r" + data.id, "saved"); return data as Recipe;
   }, [user?.id]);
   const deleteRecipe = useCallback(async (id: string) => {
-    if (!supabase) return; window.clearTimeout(timers.current["r" + id]); delete queued.current["r" + id];
+    if (!HAS_ACCOUNTS) return; window.clearTimeout(timers.current["r" + id]); delete queued.current["r" + id];
     setRecipes((m) => { const n = { ...m }; delete n[id]; return n; });
-    await supabase.from("recipes").delete().eq("id", id);
+    await (await db()).from("recipes").delete().eq("id", id);
   }, []);
 
   const saveList = useCallback((l: ShoppingList, now?: boolean) => {
-    if (!supabase || !user) { toast(t("log_in_to_save")); return; }
+    if (!HAS_ACCOUNTS || !user) { toast(t("log_in_to_save")); return; }
     const row = { ...l, updated_at: new Date().toISOString() }; const k = "l" + l.id;
     setLists((m) => ({ ...m, [l.id]: row })); mark(k, "pending");
-    debounced(k, () => { mark(k, "saving"); supabase!.from("shopping_lists").update({ name: l.name, mode: l.mode, items: l.items, updated_at: row.updated_at }).eq("id", l.id).select("id").then(({ data, error }) => done(k, error || !data?.length, "save_list_failed")); }, now);
+    debounced(k, () => { mark(k, "saving"); db().then((s) => s.from("shopping_lists").update({ name: l.name, mode: l.mode, items: l.items, updated_at: row.updated_at }).eq("id", l.id).select("id")).then(({ data, error }) => done(k, error || !data?.length, "save_list_failed"), (e) => done(k, e || true, "save_list_failed")); }, now);
   }, [user?.id]);
   const createList = useCallback(async (l: Omit<ShoppingList, "id">) => {
-    if (!supabase || !user) { toast(t("log_in_to_create_lists")); return null; }
+    if (!HAS_ACCOUNTS || !user) { toast(t("log_in_to_create_lists")); return null; }
+    const supabase = await db();
     const { data, error } = await supabase.from("shopping_lists").insert({ name: l.name, mode: l.mode, items: l.items }).select().single();
     if (error) { toast(t("create_list_failed")); return null; }
     setLists((m) => ({ [data.id]: data, ...m })); mark("l" + data.id, "saved"); return data as ShoppingList;
   }, [user?.id]);
   const deleteList = useCallback(async (id: string) => {
-    if (!supabase) return; window.clearTimeout(timers.current["l" + id]); delete queued.current["l" + id];
+    if (!HAS_ACCOUNTS) return; window.clearTimeout(timers.current["l" + id]); delete queued.current["l" + id];
     setLists((m) => { const n = { ...m }; delete n[id]; return n; });
-    await supabase.from("shopping_lists").delete().eq("id", id);
+    await (await db()).from("shopping_lists").delete().eq("id", id);
   }, []);
 
   // searches are logged once the person stops typing; a longer version of the same word replaces the shorter one
   const pending = useRef<{ kind: string; term: string; at: number } | null>(null);
   const logTimer = useRef<number>();
   const logEvent = useCallback((kind: "search" | "add", term0: string) => {
-    if (!supabase) return;
+    if (!HAS_ACCOUNTS) return;
     const term = term0.toLowerCase().replace(/\s+/g, " ").trim().slice(0, 80); if (term.length < 2) return;
-    const flush = (e: { kind: string; term: string }) => supabase!.from("usage_events").insert({ kind: e.kind, term: e.term, user_id: user?.id ?? null }).then(() => {});
+    const flush = (e: { kind: string; term: string }) => db().then((s) => s.from("usage_events").insert({ kind: e.kind, term: e.term, user_id: user?.id ?? null })).then(() => {}, () => {});
     if (kind === "add") { flush({ kind, term }); return; }
     const p = pending.current;
     if (p && !(term.startsWith(p.term) || p.term.startsWith(term))) flush(p);
