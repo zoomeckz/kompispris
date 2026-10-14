@@ -4,13 +4,13 @@ import { supabase } from "@/lib/supabase";
 import { useApp } from "@/hooks/useApp";
 import { STORE_CODES, StoreCode, lib } from "@/lib/engine";
 import { StoreChip } from "@/components/ui";
-import { LANGS, Lang, t, tp, useLang } from "@/i18n";
+import { t, tp } from "@/i18n";
+import LanguageList from "@/components/LanguageList";
 
 const desc = (s: StoreCode) => ({ w: "Willys Stockholm Vällingby", h: "Hemköp Vällingby C", c: t("desc_c"), i: t("desc_i"), l: t("desc_l"), o: t("desc_o") }[s]);
 
 export default function SettingsPage() {
   const { settings, setSettings, user, toast, recipes, lists } = useApp();
-  const { lang, setLang } = useLang();
   const nav = useNavigate();
   const [confirm, setConfirm] = useState(false);
   const st = settings;
@@ -25,7 +25,7 @@ export default function SettingsPage() {
       <h2>{t("settings")}</h2>
       <div className="card stack">
         <h3>{t("language")}</h3>
-        <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label={t("language")}>{LANGS.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select>
+        <LanguageList />
       </div>
       <div className="card stack">
         <h3>{t("account")}</h3>

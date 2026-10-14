@@ -2,15 +2,15 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApp } from "@/hooks/useApp";
 import { Ingredient, Mode, Recipe, STORES, StoreCode, Totals, Unit, activeStores, groupFor, ingCost, ingGrams, ingMacros, lib, modeResult, offerNote, offerShort, totals } from "@/lib/engine";
-import { downloadText, exampleRecipe, kr, kr0, lineQty, mergeRecipe, n0, packTxt, recipeText } from "@/lib/format";
+import { downloadText, exampleRecipe, kr, kr0, lineQty, mergeRecipe, n0, packTxt, recipeText, uid } from "@/lib/format";
 import { Kpis, MacroLine, Seg, StoreChip, copyToClipboard } from "@/components/ui";
-import { AddItemSheet, MacroSheet, PickSheet, RecipeToListSheet, UnitOptions } from "@/components/sheets";
+import { AddItemSheet, DuplicateSheet, MacroSheet, PickSheet, RecipeToListSheet, UnitOptions } from "@/components/sheets";
 import AccountCard from "@/components/AccountCard";
 import SaveStatus from "@/components/SaveStatus";
 import { newListName } from "./Lists";
 import { t, tp, unitLabel } from "@/i18n";
 
-type Sheet = { kind: "add" } | { kind: "pick"; i: number; s: StoreCode } | { kind: "macro"; i: number } | { kind: "tolist" } | null;
+type Sheet = { kind: "add" } | { kind: "pick"; i: number; s: StoreCode } | { kind: "macro"; i: number } | { kind: "tolist" } | { kind: "dup" } | null;
 
 export function ModePicker({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
   const stores = activeStores();
@@ -54,7 +54,8 @@ export default function RecipeEditor() {
       <div className="row">
         <Link className="btn ghost" to="/">{t("back_recipes")}</Link><span className="grow" />
         {isEx ? (user && <button className="btn small primary" onClick={async () => { const n = await createRecipe({ name: r.name.startsWith(prefix) ? r.name.slice(prefix.length) : r.name, portions: r.portions, notes: r.notes, ings: r.ings }); if (n) { toast(t("saved_as_yours")); nav(`/recept/${n.id}`); } }}>{t("save_as_mine")}</button>)
-          : <button className="btn small danger" onClick={async () => { if (!confirmDel) return setConfirmDel(true); await deleteRecipe(r.id); toast(t("recipe_deleted")); nav("/"); }}>{confirmDel ? t("tap_again_delete") : t("delete")}</button>}
+          : <>{user && <button className="btn small" onClick={() => setSheet({ kind: "dup" })}>{t("duplicate")}</button>}
+            <button className="btn small danger" onClick={async () => { if (!confirmDel) return setConfirmDel(true); await deleteRecipe(r.id); toast(t("recipe_deleted")); nav("/"); }}>{confirmDel ? t("tap_again_delete") : t("delete")}</button></>}
       </div>
       {isEx && <div className="banner">{user ? t("example_banner_user") : t("example_banner_guest")}</div>}
       {isEx && !user && <AccountCard />}
@@ -104,7 +105,12 @@ export default function RecipeEditor() {
 
       {sheet?.kind === "add" && <AddItemSheet onClose={() => setSheet(null)} onAdd={(ing) => { update({ ings: [...r.ings, ing] }); toast(t("added_toast")); }} />}
       {sheet?.kind === "pick" && <PickSheet ing={r.ings[sheet.i]} s={sheet.s} onClose={() => setSheet(null)} onChange={(n) => setIng(sheet.i, n)} />}
-      {sheet?.kind === "macro" && <MacroSheet ing={r.ings[sheet.i]} onClose={() => setSheet(null)} onChange={(n) => setIng(sheet.i, n)} />}
+      {sheet?.kind === "dup" && <DuplicateSheet recipe={r} onClose={() => setSheet(null)} onDone={async (name) => {
+        // a deep copy with fresh ingredient ids, so the two recipes never share anything
+        const n = await createRecipe({ name, portions: r.portions, notes: r.notes, ings: r.ings.map((i) => ({ ...JSON.parse(JSON.stringify(i)), id: uid() })) });
+        if (n) { setSheet(null); toast(t("dup_done")); nav(`/recept/${n.id}`); }
+      }} />}
+      {sheet?.kind === "macro" &&<MacroSheet ing={r.ings[sheet.i]} onClose={() => setSheet(null)} onChange={(n) => setIng(sheet.i, n)} />}
       {sheet?.kind === "tolist" && <RecipeToListSheet recipe={r} onClose={() => setSheet(null)} onDone={async (lid, rec, portions) => {
         const l = lid === "__new" ? await createList({ name: newListName(), mode: "cheap", items: [] }) : lists[lid];
         if (!l) return; const n = { ...l, items: mergeRecipe(l.items, rec, portions) }; saveList(n, true); toast(t("added_to_list", { recipe: rec.name, list: l.name })); nav(`/listor/${l.id}`);

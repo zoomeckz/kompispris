@@ -238,3 +238,9 @@ details[open]>summary~*{animation:itemIn .2s ease-out}
 /* save status next to a recipe or list name */
 .ok-txt{color:var(--ok)}
 .save-status .small{white-space:nowrap;transition:color .2s}
+
+/* language flags (flag-only emoji font from index.html) */
+.flag{font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-size:1.25em;line-height:1}
+.langrow{align-items:center}
+.langrow .flag{font-size:24px}
+.iconbtn.lang .flag{font-size:17px}

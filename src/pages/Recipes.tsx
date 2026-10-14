@@ -33,7 +33,8 @@ export default function Recipes() {
       <AccountCard />
       {user && !rs.length && <div className="card empty-state">{t("no_recipes")}</div>}
       {rs.map((r) => <RecipeCard key={r.id} r={r} />)}
-      <div className="stack"><h3>{t("example")}</h3><RecipeCard r={ex} example /></div>
+      {/* the example is only for getting started: it goes away once you have a recipe of your own */}
+      {!rs.length && <div className="stack"><h3>{t("example")}</h3><RecipeCard r={ex} example /></div>}
     </div>
   );
 }

@@ -11,10 +11,11 @@ import { fa } from "./fa";
 
 export type { Key };
 export type Lang = "sv" | "en" | "de" | "fr" | "es" | "bg" | "uk" | "ru" | "fa";
-export const LANGS: { code: Lang; name: string }[] = [
-  { code: "sv", name: "Svenska" }, { code: "en", name: "English" }, { code: "de", name: "Deutsch" },
-  { code: "fr", name: "Français" }, { code: "es", name: "Español" }, { code: "bg", name: "Български" },
-  { code: "uk", name: "Українська" }, { code: "ru", name: "Русский" }, { code: "fa", name: "فارسی" },
+// flags are drawn with a flag-only emoji font (index.html), since Windows has no flag emojis of its own
+export const LANGS: { code: Lang; name: string; flag: string }[] = [
+  { code: "sv", name: "Svenska", flag: "🇸🇪" }, { code: "en", name: "English", flag: "🇬🇧" }, { code: "de", name: "Deutsch", flag: "🇩🇪" },
+  { code: "fr", name: "Français", flag: "🇫🇷" }, { code: "es", name: "Español", flag: "🇪🇸" }, { code: "bg", name: "Български", flag: "🇧🇬" },
+  { code: "uk", name: "Українська", flag: "🇺🇦" }, { code: "ru", name: "Русский", flag: "🇷🇺" }, { code: "fa", name: "فارسی", flag: "🇮🇷" },
 ];
 const DICTS: Record<Lang, Dict> = { sv, en, de, fr, es, bg, uk, ru, fa };
 // dates follow the language; Farsi keeps Latin digits and the Gregorian calendar so prices and dates match the rest of the app

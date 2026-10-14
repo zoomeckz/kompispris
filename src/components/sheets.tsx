@@ -160,6 +160,20 @@ export function RecipeToListSheet({ fromList, recipe, onClose, onDone }: { fromL
   );
 }
 
+/* ---------- copy a recipe under a new name ---------- */
+export function DuplicateSheet({ recipe, onClose, onDone }: { recipe: Recipe; onClose: () => void; onDone: (name: string) => Promise<void> }) {
+  const [name, setName] = useState(recipe.name + t("dup_suffix"));
+  const [busy, setBusy] = useState(false);
+  return (
+    <Sheet title={t("duplicate")} onClose={onClose}>
+      <form className="stack" style={{ paddingTop: 12 }} onSubmit={async (e) => { e.preventDefault(); if (!name.trim() || busy) return; setBusy(true); await onDone(name.trim()); setBusy(false); }}>
+        <label className="small">{t("dup_name")}<input type="text" autoFocus value={name} onChange={(e) => setName(e.target.value)} onFocus={(e) => e.target.select()} /></label>
+        <button className="btn primary" disabled={busy || !name.trim()}>{busy ? t("wait") : t("dup_create")}</button>
+      </form>
+    </Sheet>
+  );
+}
+
 /* ---------- edit a list item ---------- */
 export function ItemSheet({ ing, onClose, onChange, onRemove, onPick }: { ing: Ingredient; onClose: () => void; onChange: (i: Ingredient) => void; onRemove: () => void; onPick: (s: StoreCode) => void }) {
   const [qty, setQty] = useState(String(ing.qty)); const [unit, setUnit] = useState<Unit>(ing.unit); const [q, setQ] = useState(ing.q || "");
