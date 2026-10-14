@@ -34,7 +34,10 @@ export interface Recipe { id: string; name: string; portions: number; notes: str
 export interface ShoppingList { id: string; name: string; mode: Mode; items: Ingredient[]; updated_at?: string; }
 export type Mode = "cheap" | "k" | StoreCode;
 
-export interface Settings { offers: boolean; member: boolean; stores: Record<StoreCode, boolean>; }
+/** the person's own recipe categories, which recipe is in which, the order and what is folded (see lib/org.ts) */
+export interface RecipeCat { id: string; name: string; open: boolean }
+export interface RecipeOrg { cats: RecipeCat[]; of: Record<string, string>; order: string[]; noneOpen?: boolean }
+export interface Settings { offers: boolean; member: boolean; stores: Record<StoreCode, boolean>; org?: RecipeOrg }
 export const DEFAULT_SETTINGS: Settings = { offers: true, member: false, stores: { w: true, h: true, c: true, i: true, l: true, o: true } };
 
 export interface Cost {

@@ -244,3 +244,32 @@ details[open]>summary~*{animation:itemIn .2s ease-out}
 .langrow{align-items:center}
 .langrow .flag{font-size:24px}
 .iconbtn.lang .flag{font-size:17px}
+
+/* recipe categories: fold open/closed, drag by the ⠿ handle */
+.sec{display:flex;flex-direction:column;position:relative}
+.sec.dragging{opacity:.35}
+.sec-head{display:flex;align-items:center;gap:4px;padding:2px 0 6px}
+.sec-toggle{flex:1;display:flex;align-items:center;gap:8px;min-width:0;background:none;border:0;padding:6px 2px;border-radius:8px;cursor:pointer;color:var(--ink);text-align:start}
+.sec-toggle:hover{background:color-mix(in srgb,var(--surface-2) 60%,transparent)}
+.sec-toggle .chev{width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.sec.closed .chev{transform:rotate(-90deg)}
+[dir=rtl] .sec.closed .chev{transform:rotate(90deg)}
+.sec-toggle .nm{font-family:var(--display);font-weight:600;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-toggle .ct{font-size:12px;color:var(--muted);background:var(--surface-2);border-radius:999px;padding:1px 8px}
+.sec-body{display:grid;grid-template-rows:1fr;transition:grid-template-rows .3s cubic-bezier(.2,.8,.2,1)}
+.sec.closed .sec-body{grid-template-rows:0fr}
+.sec-body>div{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:1px}
+.sec.over .sec-toggle{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.sec+.sec{margin-top:8px}
+.grip{flex-shrink:0;border:0;background:transparent;color:var(--muted);cursor:grab;touch-action:none;padding:6px 4px;border-radius:6px;font-size:18px;line-height:1;align-self:center}
+.grip:hover{color:var(--ink);background:var(--surface-2)}
+.grip:active{cursor:grabbing}
+.grip-space{width:26px;flex-shrink:0}
+.srt{display:flex;align-items:center;gap:2px}
+.srt>.card{flex:1;min-width:0}
+.srt.dragging{opacity:.35}
+.drag-overlay{box-shadow:0 18px 44px rgb(0 0 0 / .55);border-radius:var(--r);cursor:grabbing}
+.drag-overlay.sec-head{padding:10px 14px}
+.drag-overlay .nm{font-family:var(--display);font-weight:600;font-size:19px}
+.drop-empty{border:1px dashed var(--line);border-radius:var(--r);padding:14px;text-align:center;color:var(--muted);font-size:13px}
+.sec.over .drop-empty{border-color:var(--accent);color:var(--accent)}

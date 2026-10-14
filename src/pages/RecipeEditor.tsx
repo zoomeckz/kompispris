@@ -7,6 +7,7 @@ import { Kpis, MacroLine, Seg, StoreChip, copyToClipboard } from "@/components/u
 import { AddItemSheet, DuplicateSheet, MacroSheet, PickSheet, RecipeToListSheet, UnitOptions } from "@/components/sheets";
 import AccountCard from "@/components/AccountCard";
 import SaveStatus from "@/components/SaveStatus";
+import { NONE, orgOf, setCat } from "@/lib/org";
 import { newListName } from "./Lists";
 import { t, tp, unitLabel } from "@/i18n";
 
@@ -48,6 +49,7 @@ export default function RecipeEditor() {
   const res = modeResult(tot, mode);
   const stores = activeStores();
   const prefix = t("example_prefix");
+  const org = orgOf(app.settings.org);
 
   return (
     <div className="stack">
@@ -66,6 +68,10 @@ export default function RecipeEditor() {
             <input id="por" type="number" min={1} value={por} onChange={(e) => update({ portions: Math.max(1, +e.target.value || 1) })} style={{ width: 80 }} /></div>
           {!isEx && <SaveStatus k={"r" + r.id} onSave={() => saveRecipe(r, true)} />}
         </div>
+        {!isEx && user && org.cats.length > 0 && <label className="small">{t("category")}
+          <select value={org.cats.some((c) => c.id === org.of[r.id]) ? org.of[r.id] : NONE} onChange={(e) => app.setSettings({ ...app.settings, org: setCat(org, r.id, e.target.value) })}>
+            {org.cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}<option value={NONE}>{t("uncategorized")}</option>
+          </select></label>}
       </div>
 
       <div className="card stack">
@@ -108,7 +114,10 @@ export default function RecipeEditor() {
       {sheet?.kind === "dup" && <DuplicateSheet recipe={r} onClose={() => setSheet(null)} onDone={async (name) => {
         // a deep copy with fresh ingredient ids, so the two recipes never share anything
         const n = await createRecipe({ name, portions: r.portions, notes: r.notes, ings: r.ings.map((i) => ({ ...JSON.parse(JSON.stringify(i)), id: uid() })) });
-        if (n) { setSheet(null); toast(t("dup_done")); nav(`/recept/${n.id}`); }
+        if (!n) return;
+        // the copy goes into the same category as the original
+        if (org.of[r.id]) app.setSettings({ ...app.settings, org: setCat(org, n.id, org.of[r.id]) });
+        setSheet(null); toast(t("dup_done")); nav(`/recept/${n.id}`);
       }} />}
       {sheet?.kind === "macro" &&<MacroSheet ing={r.ings[sheet.i]} onClose={() => setSheet(null)} onChange={(n) => setIng(sheet.i, n)} />}
       {sheet?.kind === "tolist" && <RecipeToListSheet recipe={r} onClose={() => setSheet(null)} onDone={async (lid, rec, portions) => {
