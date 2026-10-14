@@ -420,4 +420,7 @@ export const en: Dict = {
   scrape_desc: "Fetches all prices, offers and nutrition data again via GitHub Actions and replaces the price library. Takes about 30 to 45 minutes and costs no Claude tokens. Also runs automatically on Monday and Thursday mornings.",
   scheduled: "scheduled",
   manual: "manual",
+  run_log: "Earlier runs ({n})",
+  n_failed: "{n} failed|{n} failed",
+  show_error: "Show error",
 };

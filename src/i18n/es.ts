@@ -420,4 +420,7 @@ export const es: Dict = {
   scrape_desc: "Vuelve a obtener todos los precios, ofertas y valores nutricionales mediante GitHub Actions y sustituye la biblioteca de precios. Tarda unos 30 a 45 minutos y no cuesta tokens de Claude. También se ejecuta automáticamente los lunes y jueves por la mañana.",
   scheduled: "programada",
   manual: "manual",
+  run_log: "Actualizaciones anteriores ({n})",
+  n_failed: "{n} fallida|{n} fallidas",
+  show_error: "Ver error",
 };

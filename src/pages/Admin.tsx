@@ -13,6 +13,26 @@ interface Run { id: string; status: string; source: string; summary: string | nu
 const fmtDay = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString(locale(), { day: "numeric", month: "short", year: "2-digit" }) : "–");
 const fmtTime = (d?: string | null) => (d ? new Date(d).toLocaleString(locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "–");
 const STATUS: Record<string, Key> = { queued: "run_queued", running: "run_running", done: "run_done", failed: "run_failed" };
+// GitHub answers with JSON; only its message is worth reading
+const readable = (s: string) => s.replace(/\{.*?"message"\s*:\s*"([^"]+)".*\}/s, "$1");
+
+/** one scrape run; the latest is shown in full, older failures only show their error when asked */
+function RunRow({ r, latest }: { r: Run; latest?: boolean }) {
+  const failed = r.status === "failed";
+  const msg = r.summary ? readable(r.summary) : "";
+  return (
+    <div className={`item run ${latest ? "latest" : ""}`}>
+      <span className={`run-dot ${r.status}`} aria-hidden="true" />
+      <div className="grow">
+        <div className="t">{STATUS[r.status] ? t(STATUS[r.status]) : r.status} · {r.source === "schedule" ? t("scheduled") : t("manual")}</div>
+        {msg && (failed && !latest
+          ? <details className="run-err"><summary>{t("show_error")}</summary><div className="s">{msg}</div></details>
+          : <div className={`s ${failed ? "clamp" : ""}`} title={msg}>{msg}</div>)}
+      </div>
+      <div className="right small muted">{fmtTime(r.created_at)}</div>
+    </div>
+  );
+}
 
 function BarList({ rows }: { rows: { term: string; n: number }[] }) {
   if (!rows.length) return <div className="small muted">{t("nothing_yet")}</div>;
@@ -32,7 +52,7 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const loadRuns = async () => { const { data } = await supabase!.from("scrape_runs").select("*").order("created_at", { ascending: false }).limit(8); setRuns((data as Run[]) || []); };
+  const loadRuns = async () => { const { data } = await supabase!.from("scrape_runs").select("*").order("created_at", { ascending: false }).limit(20); setRuns((data as Run[]) || []); };
   useEffect(() => {
     if (!supabase || !isAdmin) return;
     (async () => {
@@ -95,7 +115,11 @@ export default function Admin() {
         <div className="small num">{t("last_fetched")} <b>{lib().updated}</b> · Willys {byStore.w || 0} · Hemköp {byStore.h || 0} · Coop {byStore.c || 0} · Lidl {tp("n_offers", lib().lidl.length)} · ICA {tp("n_offers", lib().ica.length)} · {t("offers_at_chains", { n: offers })}</div>
         <div className="row"><button className="btn primary" disabled={busy || active} onClick={scrape}>{active ? t("scrape_running") : busy ? t("starting") : t("scrape")}</button></div>
         <div className="small muted">{t("scrape_desc")}</div>
-        {runs.length > 0 && <div className="list">{runs.map((r) => <div className="item" key={r.id}><div className="grow"><div className="t">{STATUS[r.status] ? t(STATUS[r.status]) : r.status} · {r.source === "schedule" ? t("scheduled") : t("manual")}</div><div className="s">{r.summary || ""}</div></div><div className="right small muted">{fmtTime(r.created_at)}</div></div>)}</div>}
+        {runs.length > 0 && <RunRow r={runs[0]} latest />}
+        {runs.length > 1 && <details className="runlog">
+          <summary>{t("run_log", { n: runs.length - 1 })}{runs.slice(1).some((r) => r.status === "failed") ? " · " + tp("n_failed", runs.slice(1).filter((r) => r.status === "failed").length) : ""}</summary>
+          <div className="list">{runs.slice(1).map((r) => <RunRow key={r.id} r={r} />)}</div>
+        </details>}
       </div>
     </div>
   );

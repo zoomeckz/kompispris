@@ -439,6 +439,9 @@ export const sv = {
   scrape_desc: "Hämtar alla priser, erbjudanden och näringsvärden på nytt via GitHub Actions och ersätter prisbiblioteket. Tar ungefär 30 till 45 minuter och kostar inga Claude-tokens. Körs också automatiskt måndag och torsdag morgon.",
   scheduled: "schemalagd",
   manual: "manuell",
+  run_log: "Tidigare körningar ({n})",
+  n_failed: "{n} misslyckad|{n} misslyckade",
+  show_error: "Visa felet",
 };
 
 export type Key = keyof typeof sv;

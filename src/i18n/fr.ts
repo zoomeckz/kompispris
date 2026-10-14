@@ -420,4 +420,7 @@ export const fr: Dict = {
   scrape_desc: "Récupère à nouveau tous les prix, promos et valeurs nutritionnelles via GitHub Actions et remplace la base de prix. Prend environ 30 à 45 minutes et ne coûte aucun token Claude. S'exécute aussi automatiquement le lundi et le jeudi matin.",
   scheduled: "planifiée",
   manual: "manuelle",
+  run_log: "Récupérations précédentes ({n})",
+  n_failed: "{n} échec|{n} échecs",
+  show_error: "Afficher l'erreur",
 };

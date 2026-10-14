@@ -420,4 +420,7 @@ export const de: Dict = {
   scrape_desc: "Ruft alle Preise, Angebote und Nährwerte über GitHub Actions neu ab und ersetzt die Preisbibliothek. Dauert etwa 30 bis 45 Minuten und kostet keine Claude-Tokens. Läuft außerdem automatisch montags und donnerstags morgens.",
   scheduled: "geplant",
   manual: "manuell",
+  run_log: "Frühere Abrufe ({n})",
+  n_failed: "{n} fehlgeschlagen|{n} fehlgeschlagen",
+  show_error: "Fehler anzeigen",
 };

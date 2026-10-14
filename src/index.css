@@ -273,3 +273,17 @@ details[open]>summary~*{animation:itemIn .2s ease-out}
 .drag-overlay .nm{font-family:var(--display);font-weight:600;font-size:19px}
 .drop-empty{border:1px dashed var(--line);border-radius:var(--r);padding:14px;text-align:center;color:var(--muted);font-size:13px}
 .sec.over .drop-empty{border-color:var(--accent);color:var(--accent)}
+
+/* scrape runs: latest in full, older ones folded into a log */
+.run{align-items:flex-start}
+.run-dot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0;background:var(--muted)}
+.run-dot.done{background:var(--ok)}
+.run-dot.failed{background:var(--offer)}
+.run-dot.running,.run-dot.queued{background:var(--warn);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.run .s.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.run-err summary,.runlog>summary{cursor:pointer;font-size:12.5px;color:var(--accent)}
+.run-err .s{overflow-wrap:anywhere;margin-top:4px}
+.runlog{border-top:1px solid var(--line);padding-top:8px}
+.runlog>summary{font-size:13px;color:var(--muted);padding:4px 0}
+.runlog>summary:hover{color:var(--ink)}
