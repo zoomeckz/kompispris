@@ -6,6 +6,7 @@ import { downloadText, fmtQty, kr, kr0, lineQty, listText, mergeRecipe } from "@
 import { StoreChip, copyToClipboard } from "@/components/ui";
 import { AddItemSheet, ItemSheet, PickSheet, RecipeToListSheet } from "@/components/sheets";
 import { listModes } from "./Lists";
+import SaveStatus from "@/components/SaveStatus";
 import { t, tp } from "@/i18n";
 
 type Sheet = { kind: "add" } | { kind: "rec" } | { kind: "item"; i: number } | { kind: "pick"; i: number; s: StoreCode } | null;
@@ -47,6 +48,7 @@ export default function ListView() {
         <button className="btn small danger" onClick={async () => { if (!confirmDel) return setConfirmDel(true); await deleteList(l.id); toast(t("list_deleted")); nav("/listor"); }}>{confirmDel ? t("tap_again_delete") : t("delete_list")}</button></div>
       <div className="card stack">
         <input type="text" value={l.name} onChange={(e) => update({ name: e.target.value })} placeholder={t("list_name_ph")} aria-label={t("list_name_ph")} style={{ fontFamily: "var(--display)", fontSize: 22, fontWeight: 600 }} />
+        <SaveStatus k={"l" + l.id} onSave={() => saveList(l, true)} />
         <label className="small muted">{t("prices_from_label")}
           <select value={mode} onChange={(e) => update({ mode: e.target.value as Mode })}>{listModes().filter(([k]) => k === "cheap" || k === "k" || settings.stores[k as StoreCode] !== false).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
       </div>

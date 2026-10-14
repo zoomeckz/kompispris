@@ -6,6 +6,7 @@ import { downloadText, exampleRecipe, kr, kr0, lineQty, mergeRecipe, n0, packTxt
 import { Kpis, MacroLine, Seg, StoreChip, copyToClipboard } from "@/components/ui";
 import { AddItemSheet, MacroSheet, PickSheet, RecipeToListSheet, UnitOptions } from "@/components/sheets";
 import AccountCard from "@/components/AccountCard";
+import SaveStatus from "@/components/SaveStatus";
 import { newListName } from "./Lists";
 import { t, tp, unitLabel } from "@/i18n";
 
@@ -59,8 +60,11 @@ export default function RecipeEditor() {
       {isEx && !user && <AccountCard />}
       <div className="card stack">
         <input type="text" value={r.name} onChange={(e) => update({ name: e.target.value })} placeholder={t("recipe_name_ph")} aria-label={t("recipe_name_ph")} style={{ fontFamily: "var(--display)", fontSize: 22, fontWeight: 600 }} />
-        <div className="row"><label className="muted small" htmlFor="por" style={{ flexDirection: "row" }}>{t("portions_label")}</label>
-          <input id="por" type="number" min={1} value={por} onChange={(e) => update({ portions: Math.max(1, +e.target.value || 1) })} style={{ width: 80 }} /></div>
+        <div className="row between">
+          <div className="row"><label className="muted small" htmlFor="por" style={{ flexDirection: "row" }}>{t("portions_label")}</label>
+            <input id="por" type="number" min={1} value={por} onChange={(e) => update({ portions: Math.max(1, +e.target.value || 1) })} style={{ width: 80 }} /></div>
+          {!isEx && <SaveStatus k={"r" + r.id} onSave={() => saveRecipe(r, true)} />}
+        </div>
       </div>
 
       <div className="card stack">

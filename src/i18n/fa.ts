@@ -20,6 +20,10 @@ export const fa: Dict = {
 
   close: "بستن",
   save: "ذخیره",
+  saving: "در حال ذخیره…",
+  saved_auto: "✓ به‌طور خودکار ذخیره شد",
+  save_error: "ذخیره نشد",
+  try_again: "تلاش دوباره",
   delete: "حذف",
   add: "افزودن",
   change: "تغییر",

@@ -20,6 +20,10 @@ export const bg: Dict = {
 
   close: "Затвори",
   save: "Запази",
+  saving: "Запазване…",
+  saved_auto: "✓ Запазено автоматично",
+  save_error: "Неуспешно запазване",
+  try_again: "Опитай пак",
   delete: "Премахни",
   add: "Добави",
   change: "Промени",

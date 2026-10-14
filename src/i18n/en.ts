@@ -20,6 +20,10 @@ export const en: Dict = {
 
   close: "Close",
   save: "Save",
+  saving: "Saving…",
+  saved_auto: "✓ Saved automatically",
+  save_error: "Could not save",
+  try_again: "Try again",
   delete: "Remove",
   add: "Add",
   change: "Change",

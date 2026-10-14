@@ -20,6 +20,10 @@ export const uk: Dict = {
 
   close: "Закрити",
   save: "Зберегти",
+  saving: "Збереження…",
+  saved_auto: "✓ Збережено автоматично",
+  save_error: "Не вдалося зберегти",
+  try_again: "Спробувати ще",
   delete: "Видалити",
   add: "Додати",
   change: "Змінити",

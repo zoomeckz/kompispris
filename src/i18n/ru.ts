@@ -20,6 +20,10 @@ export const ru: Dict = {
 
   close: "Закрыть",
   save: "Сохранить",
+  saving: "Сохранение…",
+  saved_auto: "✓ Сохранено автоматически",
+  save_error: "Не удалось сохранить",
+  try_again: "Повторить",
   delete: "Удалить",
   add: "Добавить",
   change: "Изменить",

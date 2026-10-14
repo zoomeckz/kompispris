@@ -1,10 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase, SUPABASE_URL_PUBLIC } from "@/lib/supabase";
-import { t } from "@/i18n";
+import { Key, t } from "@/i18n";
 import { DEFAULT_SETTINGS, Recipe, Settings, ShoppingList, parseLibrary, setLibrary, setSettings as engineSetSettings, Library } from "@/lib/engine";
 
 const LS_SETTINGS = "kompispris.settings";
+export type SaveState = "pending" | "saving" | "saved" | "error";
 
 interface AppState {
   lib: Library | null; libError: string | null;
@@ -15,6 +16,8 @@ interface AppState {
   createRecipe: (r: Omit<Recipe, "id">) => Promise<Recipe | null>;
   saveList: (l: ShoppingList, now?: boolean) => void; deleteList: (id: string) => Promise<void>;
   createList: (l: Omit<ShoppingList, "id">) => Promise<ShoppingList | null>;
+  /** per recipe ("r" + id) or list ("l" + id); missing means nothing has changed since it was loaded */
+  saveState: Record<string, SaveState>; flushSave: (key: string) => void;
   logEvent: (kind: "search" | "add", term: string) => void;
   toast: (msg: string) => void;
   version: number; bump: () => void;
@@ -97,43 +100,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (supabase && user) supabase.from("user_settings").upsert({ user_id: user.id, settings: s, updated_at: new Date().toISOString() }).then(() => {});
   }, [user?.id]);
 
+  // Edits are saved automatically a moment after the last change; saveState tells the page what is happening.
+  const [saveState, setSaveState] = useState<Record<string, SaveState>>({});
+  const mark = (key: string, s: SaveState) => setSaveState((m) => (m[key] === s ? m : { ...m, [key]: s }));
+  const queued = useRef<Record<string, () => void>>({});
   const debounced = (key: string, fn: () => void, now?: boolean) => {
     window.clearTimeout(timers.current[key]);
-    if (now) fn(); else timers.current[key] = window.setTimeout(fn, 700);
+    const run = () => { delete queued.current[key]; fn(); };
+    queued.current[key] = run;
+    if (now) run(); else timers.current[key] = window.setTimeout(run, 700);
   };
+  const flushSave = useCallback((key: string) => { window.clearTimeout(timers.current[key]); queued.current[key]?.(); }, []);
+  // don't lose the last edit when the tab is closed or the phone switches app before the delay has passed
+  useEffect(() => {
+    const flushAll = () => Object.keys(queued.current).forEach((k) => { window.clearTimeout(timers.current[k]); queued.current[k]?.(); });
+    const onHide = () => { if (document.visibilityState === "hidden") flushAll(); };
+    window.addEventListener("pagehide", flushAll); document.addEventListener("visibilitychange", onHide);
+    return () => { window.removeEventListener("pagehide", flushAll); document.removeEventListener("visibilitychange", onHide); };
+  }, []);
+  // an update that changed no row counts as a failure; a newer edit still in the queue keeps the state at "pending"
+  const done = (key: string, error: unknown, msg: Key) => { if (error) { mark(key, "error"); toast(t(msg)); } else if (!queued.current[key]) mark(key, "saved"); };
 
   const saveRecipe = useCallback((r: Recipe, now?: boolean) => {
     if (!supabase || !user) { toast(t("log_in_to_save")); return; }
-    const row = { ...r, updated_at: new Date().toISOString() };
-    setRecipes((m) => ({ ...m, [r.id]: row }));
-    debounced("r" + r.id, () => { supabase!.from("recipes").update({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings, updated_at: row.updated_at }).eq("id", r.id).then(({ error }) => { if (error) toast(t("save_recipe_failed")); }); }, now);
+    const row = { ...r, updated_at: new Date().toISOString() }; const k = "r" + r.id;
+    setRecipes((m) => ({ ...m, [r.id]: row })); mark(k, "pending");
+    debounced(k, () => { mark(k, "saving"); supabase!.from("recipes").update({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings, updated_at: row.updated_at }).eq("id", r.id).select("id").then(({ data, error }) => done(k, error || !data?.length, "save_recipe_failed")); }, now);
   }, [user?.id]);
   const createRecipe = useCallback(async (r: Omit<Recipe, "id">) => {
     if (!supabase || !user) { toast(t("log_in_to_save_recipes")); return null; }
     const { data, error } = await supabase.from("recipes").insert({ name: r.name, portions: r.portions, notes: r.notes, ings: r.ings }).select().single();
     if (error) { toast(t("create_recipe_failed")); return null; }
-    setRecipes((m) => ({ [data.id]: data, ...m })); return data as Recipe;
+    setRecipes((m) => ({ [data.id]: data, ...m })); mark("r" + data.id, "saved"); return data as Recipe;
   }, [user?.id]);
   const deleteRecipe = useCallback(async (id: string) => {
-    if (!supabase) return; window.clearTimeout(timers.current["r" + id]);
+    if (!supabase) return; window.clearTimeout(timers.current["r" + id]); delete queued.current["r" + id];
     setRecipes((m) => { const n = { ...m }; delete n[id]; return n; });
     await supabase.from("recipes").delete().eq("id", id);
   }, []);
 
   const saveList = useCallback((l: ShoppingList, now?: boolean) => {
     if (!supabase || !user) { toast(t("log_in_to_save")); return; }
-    const row = { ...l, updated_at: new Date().toISOString() };
-    setLists((m) => ({ ...m, [l.id]: row }));
-    debounced("l" + l.id, () => { supabase!.from("shopping_lists").update({ name: l.name, mode: l.mode, items: l.items, updated_at: row.updated_at }).eq("id", l.id).then(({ error }) => { if (error) toast(t("save_list_failed")); }); }, now);
+    const row = { ...l, updated_at: new Date().toISOString() }; const k = "l" + l.id;
+    setLists((m) => ({ ...m, [l.id]: row })); mark(k, "pending");
+    debounced(k, () => { mark(k, "saving"); supabase!.from("shopping_lists").update({ name: l.name, mode: l.mode, items: l.items, updated_at: row.updated_at }).eq("id", l.id).select("id").then(({ data, error }) => done(k, error || !data?.length, "save_list_failed")); }, now);
   }, [user?.id]);
   const createList = useCallback(async (l: Omit<ShoppingList, "id">) => {
     if (!supabase || !user) { toast(t("log_in_to_create_lists")); return null; }
     const { data, error } = await supabase.from("shopping_lists").insert({ name: l.name, mode: l.mode, items: l.items }).select().single();
     if (error) { toast(t("create_list_failed")); return null; }
-    setLists((m) => ({ [data.id]: data, ...m })); return data as ShoppingList;
+    setLists((m) => ({ [data.id]: data, ...m })); mark("l" + data.id, "saved"); return data as ShoppingList;
   }, [user?.id]);
   const deleteList = useCallback(async (id: string) => {
-    if (!supabase) return; window.clearTimeout(timers.current["l" + id]);
+    if (!supabase) return; window.clearTimeout(timers.current["l" + id]); delete queued.current["l" + id];
     setLists((m) => { const n = { ...m }; delete n[id]; return n; });
     await supabase.from("shopping_lists").delete().eq("id", id);
   }, []);
@@ -155,8 +174,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AppState>(() => ({
     lib, libError, session, user, isAdmin, authReady, settings, setSettings, recipes, lists,
-    saveRecipe, deleteRecipe, createRecipe, saveList, deleteList, createList, logEvent, toast, version, bump,
-  }), [lib, libError, session, isAdmin, authReady, settings, recipes, lists, version, setSettings, saveRecipe, saveList, createRecipe, createList, deleteRecipe, deleteList, logEvent, toast, bump]);
+    saveRecipe, deleteRecipe, createRecipe, saveList, deleteList, createList, saveState, flushSave, logEvent, toast, version, bump,
+  }), [lib, libError, session, isAdmin, authReady, settings, recipes, lists, saveState, version, setSettings, saveRecipe, saveList, createRecipe, createList, deleteRecipe, deleteList, flushSave, logEvent, toast, bump]);
 
   return <Ctx.Provider value={value}>{children}{toastMsg && <div className="toast" role="status" key={toastMsg}>{toastMsg}</div>}</Ctx.Provider>;
 }

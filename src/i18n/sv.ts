@@ -23,6 +23,10 @@ export const sv = {
   // shared
   close: "Stäng",
   save: "Spara",
+  saving: "Sparar…",
+  saved_auto: "✓ Sparat automatiskt",
+  save_error: "Kunde inte spara",
+  try_again: "Försök igen",
   delete: "Ta bort",
   add: "Lägg till",
   change: "Ändra",
