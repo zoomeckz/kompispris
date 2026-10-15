@@ -24,7 +24,8 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # a normal run takes about an hour and a half; retries of a store that doesn't answer can add more
+    timeout-minutes: 210
     defaults:
       run:
         working-directory: scraper
@@ -34,8 +35,8 @@ jobs:
       RUN_SOURCE: ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
       KP_OUT: products.json
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Mark run as started
@@ -44,6 +45,7 @@ jobs:
         run: python3 run_all.py
       - name: Publish library
         run: python3 upload.py publish products.json
+      # also when the run is stopped or times out; the reason comes from summary.txt (written by run_all.py)
       - name: Mark run as failed
-        if: failure()
-        run: python3 upload.py fail "$(tail -n 1 run_all.log 2>/dev/null || echo 'Körningen avbröts')"
+        if: failure() || cancelled()
+        run: python3 upload.py fail "$(cat summary.txt 2>/dev/null || tail -n 1 run_all.log 2>/dev/null || echo 'Körningen avbröts')"

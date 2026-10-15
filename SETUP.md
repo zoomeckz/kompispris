@@ -26,7 +26,7 @@ Facebook har Lovable ingen färdig inloggning för. Knappen visar "Facebook-inlo
 
 Inga hemligheter behövs. Arbetsflödet `.github/workflows/scrape.yml` bevisar för funktionen `publish-library` att det är just det här repots arbetsflöde på `main` (GitHub OIDC), och funktionen laddar upp biblioteket och skriver resultatet i `scrape_runs`.
 
-Första hämtningen, efter steg 1: repot på GitHub > **Actions** > "Scrape prices" > "Run workflow". Det tar ungefär 30 till 45 minuter. Sedan körs den automatiskt måndag och torsdag 04:00 UTC (ändra i `.github/workflows/scrape.yml`).
+Första hämtningen, efter steg 1: repot på GitHub > **Actions** > "Scrape prices" > "Run workflow". Det tar ungefär en och en halv timme. Sedan körs den automatiskt måndag och torsdag 04:00 UTC (ändra i `.github/workflows/scrape.yml`).
 
 Varje körning bygger biblioteket från grunden, laddar upp det och skriver resultatet i tabellen `scrape_runs` som visas i Admin. Tills första körningen är klar använder appen kopian i `public/library/products.json`.
 

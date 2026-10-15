@@ -44,7 +44,7 @@ if cmd == "start":
     print("run", res["run_id"])
 elif cmd == "publish":
     path = sys.argv[2]
-    summary = open("summary.txt").read().strip() if os.path.exists("summary.txt") else ""
+    summary = open("summary.txt", encoding="utf-8").read().strip() if os.path.exists("summary.txt") else ""
     res = call("publish", {"run_id": run_id(), "summary": summary[:500]}, gzip.compress(open(path, "rb").read()))
     print("published", res["meta"])
 elif cmd == "fail":
